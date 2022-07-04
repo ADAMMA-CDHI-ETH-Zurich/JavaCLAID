@@ -1,0 +1,19 @@
+## Class Lookup
+
+Use this notation:
+jclass cls = env->FindClass((std::string("com/example/portaible/AudioData")).c_str());
+DO NOT USE:
+jclass cls = env->FindClass((std::string("L[com/example/portaible/AudioData")).c_str());
+This would find the class successfully aswell, however env->GetMethodId(cls, ...) would ALWAYS
+fail even if the function exists.
+
+
+## Class name of jclass object
+Do NOT call getName of the jclass object.
+Instead, find the MethodID of the base class of all Java classes, which is java/lang/class
+Call THIS MethodID on the ORIGINAL jclass obejct:
+
+jclass dataType; // jclass you want to get the name of.
+jclass ccls = env->FindClass("java/lang/Class"); // Get base class of all Java classes
+jmethodID mid_getName = env->GetMethodID(ccls, "getName", "()Ljava/lang/String;"); // Get MethodID of "getName" of java/lang/Class
+jstring strObj = (jstring)env->CallObjectMethod(dataType, mid_getName); // Call that method on the original jclass object.

@@ -2,19 +2,20 @@
 #include "RunTime/RunTime.hpp"
 
 #include "JavaWrapper/JNIUtils.hpp"
+#include "WrapperMaster.hpp"
 
 namespace portaible
 {
     namespace JavaWrapper
     {
-        class JavaAuthority : public Authority
+        class JavaModule : public Module
         {
 
             public:
-                JavaAuthority(JNIEnv* env, jobject javaObject)
+                JavaModule(JNIEnv* env, jobject javaObject)
                 {
                     // DO not store JNIEnv here !
-                    // Authority will run in a separate thread later, but env
+                    // Module will run in a separate thread later, but env
                     // is only valid for the thread it was created on.
                     // Thus, we need to get another env in initialize function.
                     env->GetJavaVM(&this->javaVM);
@@ -29,7 +30,7 @@ namespace portaible
 
                 void initialize()
                 {
-                    Logger::printfln("JavaAuthority init");
+                    Logger::printfln("JavaModule init");
                     JavaVMAttachArgs args;
                     args.version = JNI_VERSION_1_6; // choose your JNI version
                     args.name = NULL; // you might want to give the java thread a name
@@ -38,7 +39,7 @@ namespace portaible
 
                     jmethodID mid =
                             env->GetMethodID(JNIUtils::getClassOfObject(env, javaObject), "initialize", "()V");
-                    Logger::printfln("JavaAuthority 2");
+                    Logger::printfln("JavaModule 2");
 
                     if(mid == nullptr)
                     {
@@ -48,13 +49,29 @@ namespace portaible
                     }
                     else
                     {
-                                        Logger::printfln("JavaAuthority 3");
+                                        Logger::printfln("JavaModule 3");
 
                         // Return should be of type java class "Channel" (portaible.JavaWrappers.Channel)
                         env->CallVoidMethod(javaObject, mid);
 
                     }
                 }
+              
+                jobject publish(JNIEnv* env, jclass dataType, jstring channelID)
+                {
+                    std::string className = JNIUtils::getClassName(env, dataType);
+                    if(!WrapperMaster::getInstance()->isWrapperRegisteredForClass(className))
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
+                    }
+
+                    WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapper(className);
+                    jobject channel = wrapper->publish(env, channelID);
+
+                    return channel;
+                }
+
+                
 
             private:
                 JNIEnv* env;

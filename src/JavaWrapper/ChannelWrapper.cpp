@@ -18,7 +18,7 @@ extern "C"
         // From the java side, it is guaranteed that the data type of data
         // matches the data type that was specified when the channel was created using publish.
         // As Channel is a templated/generic class Channel<T> on java side,
-        // it was created like Channel<AudioData> audioChannel = authority.publish(AudioData.class, channelID).
+        // it was created like Channel<AudioData> audioChannel = module.publish(AudioData.class, channelID).
         // Therefore, audioChannel.post() has to be called with an object of type AudioData, which
         // is ensured at compile time.
         Logger::printfln("Post test");

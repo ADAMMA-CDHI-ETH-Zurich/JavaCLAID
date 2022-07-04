@@ -8,19 +8,7 @@ using namespace portaible;
 using namespace portaible::JavaWrapper;
 extern "C"
 {
-JNIEXPORT jobject JNICALL Java_com_example_portaible_Wrapper_publish(JNIEnv* env, jclass cls, jclass dataType, jstring channelID)
-    {
-        std::string className = JNIUtils::getClassName(env, dataType);
-        if(!WrapperMaster::getInstance()->isWrapperRegisteredForClass(className))
-        {
-            PORTAIBLE_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
-        }
 
-        WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapper(className);
-        jobject channel = wrapper->publish(env, channelID);
-
-        return channel;
-    }
 
     JNIEXPORT void JNICALL Java_com_example_portaible_Wrapper_post(JNIEnv* env, jobject jData, jobject jChannel)
     {

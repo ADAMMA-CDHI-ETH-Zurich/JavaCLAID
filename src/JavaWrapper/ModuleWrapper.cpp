@@ -27,40 +27,21 @@ Java_com_example_portaible_Module_init(JNIEnv* env, jobject wrappedModule)
      * Method:    publish
      * Signature: (Ljava/lang/String;)LChannel/Channel;
      */
-JNIEXPORT jobject Java_com_example_portaible_Module_publish
+JNIEXPORT jobject Java_com_example_portaible_Module_publishNative
   (JNIEnv* env, jobject wrappedModule, jclass dataType, jstring channelID)
 {
     JavaModule* module = JNIHandle::getHandle<JavaModule>(env, wrappedModule);
     return module->publish(env, dataType, channelID);
 }
 
+JNIEXPORT jobject Java_com_example_portaible_Module_subscribeNative
+  (JNIEnv* env, jobject wrappedModule, jclass dataType, jstring channelID, jstring callbackFunctionName, jstring functionSignature)
+{
+    // TODO: CHECK IF FUNCTION SIGNATURE MAKES SENSE (i.e., only one argument for callback function).
+    JavaModule* module = JNIHandle::getHandle<JavaModule>(env, wrappedModule);
+    return module->subscribe(env, dataType, channelID, callbackFunctionName, functionSignature);
+}
+
 }
 #endif
 
-/*
-class TestCollector : public Collector
-{
-    public:
-
-        void initialize()
-        {
-            this->testChannel = publish<std::string>("TestChannel");
-            this->dataChannel = publish<AudioData>("MicrophoneData");
-
-            this->requestChannel = subscribe<Request>("Requests");
-
-        }
-
-        void onRequest(Request& request)
-        {
-
-        }
-
-    private:
-        Channel<std::string> testChannel;
-        Channel<AudioData> dataChannel;
-        
-        Channel<Request> requestChannel;
-
-
-}*/

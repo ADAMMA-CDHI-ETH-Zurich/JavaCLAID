@@ -30,7 +30,7 @@ namespace portaible
                     {
                         PORTAIBLE_THROW(portaible::Exception, "Error, wrapper for class \"" << javaClassName << "\" was registered more than once");
                     }
-                    Wrapper<T>* wrapper = new Wrapper<T>;
+                    Wrapper<T>* wrapper = new Wrapper<T>(javaClassName);
                     this->registeredWrappers.insert(std::make_pair(javaClassName, static_cast<WrapperBase*>(wrapper)));
                 }
 

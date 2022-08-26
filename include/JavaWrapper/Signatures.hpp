@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "Utilities/StringReplaceAll.hpp"
+
 namespace portaible
 {
     namespace JavaWrapper
@@ -18,6 +20,13 @@ namespace portaible
                 CLASS_SIGNATURE(Channel)
                 const std::string String = "java/lang/String";
                 const std::string JavaClass = "java/lang/Class";
+
+                static std::string classNameToSignature(const std::string& javaClassName)
+                {
+                    std::string result = javaClassName;
+                    stringReplaceAll(result, ".", "/");
+                    return result;
+                }
             }
 
             namespace Function
@@ -62,8 +71,6 @@ namespace portaible
 
                     std::string signature;
                     paramsSignature(params, signature);
-
-
 
                     return signature + "V";
                 }

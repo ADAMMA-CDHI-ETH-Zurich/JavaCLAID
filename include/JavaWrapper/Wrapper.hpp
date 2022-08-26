@@ -1,7 +1,10 @@
 #pragma once
 
+
+
 #include "WrapperBase.hpp"
 #include "RunTime/RunTime.hpp"
+
 namespace portaible
 {
     namespace JavaWrapper
@@ -9,49 +12,112 @@ namespace portaible
         template<typename T>
         class Wrapper : public WrapperBase
         {
-            virtual jobject publish(JNIEnv* env, jstring jChannelID)
-            {
-                Channel<T>* channel = new Channel<T>;
-                std::string channelID = JNIUtils::toStdString(env, jChannelID);
-                *channel = PORTAIBLE_RUNTIME->channelManager.publish<T>(channelID);
-                jclass cls = env->FindClass((std::string(Signatures::Class::Channel)).c_str());
+            private:
+                const std::string javaClassName;
 
-                if(cls == nullptr)
+                intptr_t getUniqueID()
                 {
-                    PORTAIBLE_THROW(Exception, "Cannot publish, failed to lookup channel class " << Signatures::Class::Channel);
+                    return reinterpret_cast<intptr_t>(this);
                 }
 
-                jmethodID constructor = env->GetMethodID(cls, "<init>", "()V");
-
-                if(constructor == nullptr)
+                jobject newJavaObjectFromClassSignature(JNIEnv* env, std::string className)
                 {
-                    PORTAIBLE_THROW(Exception, "Cannot publish, failed to lookup constructor for channel class " << Signatures::Class::Channel);
+                    jclass cls = env->FindClass(className.c_str());
+
+                    if(cls == nullptr)
+                    {
+                        PORTAIBLE_THROW(Exception, "Cannot create java object, failed to lookup channel class " << Signatures::Class::Channel);
+                    }
+
+                    jmethodID constructor = env->GetMethodID(cls, "<init>", "()V");
+
+                    if(constructor == nullptr)
+                    {
+                        PORTAIBLE_THROW(Exception, "Cannot create java object, failed to lookup constructor for channel class " << Signatures::Class::Channel);
+                    }
+
+                    jobject channelObject = env->NewObject(cls, constructor);
+
+                    if(channelObject == nullptr)
+                    {
+                        PORTAIBLE_THROW(Exception, "Cannot create java object, object with class signature " << Signatures::Class::Channel << " could not be created.");
+                    }
                 }
 
-                jobject channelObject = env->NewObject(cls, constructor);
-
-                if(channelObject == nullptr)
+                jobject channelObjectToJavaChannelObject(JNIEnv* env, Channel<T>* channel)
                 {
-                    PORTAIBLE_THROW(Exception, "Cannot publish, to create channel object " << Signatures::Class::Channel);
+                    channelObject = newJavaObjectFromClassSignature(std::string(Signatures::Class::Channel));
+
+                    JNIHandle::setHandle(env, channelObject, channel);
+                    return channelObject;
                 }
 
-                JNIHandle::setHandle(env, channelObject, channel);
+            public:
+                Wrapper(std::string javaClassName) : javaClassName(javaClassName)
+                {
 
-                return channelObject;
-            }
+                }
 
-            virtual void post(JNIEnv* env, jobject jchannel, jobject jdata)
-            {
-                Channel<T>* channel = JNIHandle::getHandle<Channel<T>>(env, jchannel);
-                T* data = JNIHandle::getHandle<T>(env, jdata);
-                channel->post(*data);
-            }
+                virtual jobject publish(JNIEnv* env, JavaModule* module, jstring jChannelID)
+                {
+                    Channel<T>* channel = new Channel<T>;
+                    std::string channelID = JNIUtils::toStdString(env, jChannelID);
+                    *channel = PORTAIBLE_RUNTIME->channelManager.publish<T>(channelID, module->getUniqueIdentifier());
+                    
+                    jobject channelObject = channelObjectToJavaChannelObject(env, channel);
 
-            void assignInstance(JNIEnv* env, jobject javaObject)
-            {
-                T* data = new T;
-                JNIHandle::setHandle(env, javaObject, data);
-            }
+                    return channelObject;
+                }
+
+                virtual jobject subscribe(JNIEnv* env, JavaModule* module, jstring jChannelID, jstring jFunctionCallbackName, jstring jFunctionSignature)
+                {
+                    Channel<T>* channel = new Channel<T>;
+                    std::string channelID = JNIUtils::toStdString(env, jChannelID);
+                    std::string callbackFunctionName = JNIUtils::toStdString(env, jFunctionCallbackName);
+                    std::string callbackFunctionSignature = JNIUtils::toStdString(env, , jstring functionSignature);
+
+                    std::function<void (ChannelData<T>)> callbackFunction = 
+                        std::bind(&Wrapper::onData, this, module, callbackFunctionName, callbackFunctionSignature, std::placeholders::_1);
+
+
+                    *channel = 
+                        PORTAIBLE_RUNTIME->channelManager.subscribe<T>(channelID, module->makeSubscriber(callbackFunction), module->getUniqueIdentifier());
+                    
+                    jobject channelObject = channelObjectToJavaChannelObject(env, channel);
+
+
+                    return channelObject;
+                }
+
+                virtual void post(JNIEnv* env, jobject jchannel, jobject jdata)
+                {
+                    Logger::printfln("Successfully posted data!");
+                    Channel<T>* channel = JNIHandle::getHandle<Channel<T>>(env, jchannel);
+                    T* data = JNIHandle::getHandle<T>(env, jdata);
+                    // This will create a copy of the data.
+                    channel->post(*data);
+                }
+
+                void assignInstance(JNIEnv* env, jobject javaObject)
+                {
+                    T* data = new T;
+                    JNIHandle::setHandle(env, javaObject, data);
+                }
+
+                void onData(JavaModule* module, std::string javaCallbackFunctionToExecute, std::string javaCllbackFunctionSignature, ChannelData<T> channelData)
+                {
+                    const T& data = channelData.value();
+
+                    T* copiedData = new T(data);
+
+                    JNIEnv* env = module->getEnv();
+
+                    jobject javaDataObject = newJavaObjectFromClassSignature(env, Signatures::Class::classNameToSignature(this->javaClassName));
+                    JNIHandle::setHandle(env, javaDataObject, copiedData);
+
+                    // TODO: Left here before vacation. Implement the function of JavaModule.
+                    module->callCallbackFunction(javaCallbackFunctionToExecute, javaCllbackFunctionSignature, javaDataObject);
+                }
 
         };
     }

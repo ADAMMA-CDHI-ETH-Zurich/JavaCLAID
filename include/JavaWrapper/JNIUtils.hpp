@@ -3,60 +3,118 @@
 #include <string>
 #include <jni.h>
 #include "JNIHandle.hpp"
-
+#include "Exception/Exception.hpp"
 
 namespace portaible
 {
     namespace JavaWrapper
     {
-        namespace JNIUtils
+        class JNIUtils
         {
-            static std::string toStdString(JNIEnv *env, jstring jStr)
-            {
-                if (!jStr)
-                        return "";
+            private:
+                static JavaVM* jvm;
+                static jobject gClassLoader;
+                static jmethodID gFindClassMethod;
+                static bool onLoadCalled;
 
-                const jclass stringClass = env->GetObjectClass(jStr);
-                const jmethodID getBytes = env->GetMethodID(stringClass, "getBytes", "(Ljava/lang/String;)[B");
-                const jbyteArray stringJbytes = (jbyteArray) env->CallObjectMethod(jStr, getBytes, env->NewStringUTF("UTF-8"));
+                static JNIEnv* getEnv() 
+                {
+                    JNIEnv *env;
+                    int status = jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
+                    if(status < 0) {    
+                        status = jvm->AttachCurrentThread(&env, NULL);
+                        if(status < 0) {        
+                            return nullptr;
+                        }
+                    }
+                    return env;
+                }
 
-                size_t length = (size_t) env->GetArrayLength(stringJbytes);
-                jbyte* pBytes = env->GetByteArrayElements(stringJbytes, NULL);
+            public:
+                // See https://stackoverflow.com/questions/13263340/findclass-from-any-thread-in-android-jni/16302771#16302771
+                static void onLoad(JavaVM* javaVM)
+                {
+                    Logger::printfln("JNIUtils onLoad");
+                    JNIUtils::jvm = javaVM;
+                    JNIEnv* env = getEnv();
+                    Logger::printfln("JNIUtils onLoad 2");
 
-                std::string ret = std::string((char*) pBytes, length);
-                env->ReleaseByteArrayElements(stringJbytes, pBytes, JNI_ABORT);
+                    // Just use any class of portaible.
+                    auto randomClass = env->FindClass(Signatures::Class::Channel.c_str());
+                    jclass classClass = env->GetObjectClass(randomClass);
+                                        Logger::printfln("JNIUtils onLoad 3");
 
-                env->DeleteLocalRef(stringJbytes);
-                env->DeleteLocalRef(stringClass);
-                return ret;
-            }
+                    auto classLoaderClass = env->FindClass("java/lang/ClassLoader");
+                    auto getClassLoaderMethod = env->GetMethodID(classClass, "getClassLoader",
+                                                            "()Ljava/lang/ClassLoader;");
+                                                            Logger::printfln("JNIUtils onLoad 4");
 
-            static jstring toJString(JNIEnv* env, const std::string& nativeString)
-            {
-                return env->NewStringUTF(nativeString.c_str());
-            }
+                    jobject tmpClassLoader = env->CallObjectMethod(randomClass, getClassLoaderMethod);
+                    gClassLoader = env->NewGlobalRef(tmpClassLoader);
+                    gFindClassMethod = env->GetMethodID(classLoaderClass, "findClass",
+                                                    "(Ljava/lang/String;)Ljava/lang/Class;");
+                    onLoadCalled = true;
+                                        Logger::printfln("JNIUtils onLoad 5");
 
-            // Returns the class name of a given object of type jclass.
-            // Not, the object needs to be a Class object in Java!
-            // E.g. String.class would work. Its NOT an instance of String in that case.
-            // If it was a native function (called from java), you'd call it like getClassName(String.class).
-            // If you want to get the class name of an object, make sure to get it's class first (i.e.: env->GetObjectClass(env, object)),
-            // do not pass the object to this function
-            static std::string getClassName(JNIEnv* env, jclass dataType)
-            {
-                // Find base class Class
-                jclass ccls = env->FindClass("java/lang/Class");
-                jmethodID mid_getName = env->GetMethodID(ccls, "getName", "()Ljava/lang/String;");
-                jstring strObj = (jstring)env->CallObjectMethod(dataType, mid_getName);
+                }
 
-                return JNIUtils::toStdString(env, strObj);
-            }
 
-            static jclass getClassOfObject(JNIEnv* env, jobject object)
-            {
-                return env->GetObjectClass(object);
-            }
+                static jclass findClass(JNIEnv* env, const char* name) 
+                {
+                    if(!onLoadCalled)
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, JNIUtils::findClass was called without prior call to onLoad. Please make sure that JNIUtils::onLoad "
+                        "was called in JNI_OnLoad in native code.");
+                    }
+                    return static_cast<jclass>(env->CallObjectMethod(gClassLoader, gFindClassMethod, env->NewStringUTF(name)));
+                }
 
-        }
+
+                static std::string toStdString(JNIEnv *env, jstring jStr)
+                {
+                    if (!jStr)
+                            return "";
+
+                    const jclass stringClass = env->GetObjectClass(jStr);
+                    const jmethodID getBytes = env->GetMethodID(stringClass, "getBytes", "(Ljava/lang/String;)[B");
+                    const jbyteArray stringJbytes = (jbyteArray) env->CallObjectMethod(jStr, getBytes, env->NewStringUTF("UTF-8"));
+
+                    size_t length = (size_t) env->GetArrayLength(stringJbytes);
+                    jbyte* pBytes = env->GetByteArrayElements(stringJbytes, NULL);
+
+                    std::string ret = std::string((char*) pBytes, length);
+                    env->ReleaseByteArrayElements(stringJbytes, pBytes, JNI_ABORT);
+
+                    env->DeleteLocalRef(stringJbytes);
+                    env->DeleteLocalRef(stringClass);
+                    return ret;
+                }
+
+                static jstring toJString(JNIEnv* env, const std::string& nativeString)
+                {
+                    return env->NewStringUTF(nativeString.c_str());
+                }
+
+                // Returns the class name of a given object of type jclass.
+                // Not, the object needs to be a Class object in Java!
+                // E.g. String.class would work. Its NOT an instance of String in that case.
+                // If it was a native function (called from java), you'd call it like getClassName(String.class).
+                // If you want to get the class name of an object, make sure to get it's class first (i.e.: env->GetObjectClass(env, object)),
+                // do not pass the object to this function
+                static std::string getClassName(JNIEnv* env, jclass dataType)
+                {
+                    // Find base class Class
+                    jclass ccls = env->FindClass("java/lang/Class");
+                    jmethodID mid_getName = env->GetMethodID(ccls, "getName", "()Ljava/lang/String;");
+                    jstring strObj = (jstring)env->CallObjectMethod(dataType, mid_getName);
+
+                    return JNIUtils::toStdString(env, strObj);
+                }
+
+                static jclass getClassOfObject(JNIEnv* env, jobject object)
+                {
+                    return env->GetObjectClass(object);
+                }
+        };
     }
 }

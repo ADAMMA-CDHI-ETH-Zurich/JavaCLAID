@@ -70,10 +70,29 @@ namespace portaible
             }
 
             WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapper(className);
-            jobject channel = wrapper->subscribe(env, this, channelID, functionCallbackName, jstring functionSignature);
+            jobject channel = wrapper->subscribe(env, this, channelID, functionCallbackName, functionSignature);
 
             return channel;
         }
+
+        void JavaModule::callCallbackFunction(const std::string& functionName, jobject dataObject)
+        {
+            
+            jmethodID mid =
+                    env->GetMethodID(JNIUtils::getClassOfObject(env, javaObject), functionName.c_str(), Signatures::Function::functionSignatureVoid({Signatures::Class::ChannelData}).c_str());
+            
+            if(mid == nullptr)
+            {
+                portaible::Logger::printfln("NULL");
+                PORTAIBLE_THROW(Exception, "Error, could not call callback function. Function " << functionName << " with signature void " << Signatures::Class::ChannelData << " not found for class "
+                    << JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, javaObject)));
+            }
+            else
+            {
+                env->CallVoidMethod(javaObject, mid, dataObject);
+            }
+        }
+    
 
         JNIEnv* JavaModule::getEnv()
         {

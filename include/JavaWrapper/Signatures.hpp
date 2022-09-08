@@ -18,6 +18,8 @@ namespace portaible
                 static const std::string prefix = "com/example/portaible/";
 
                 CLASS_SIGNATURE(Channel)
+                CLASS_SIGNATURE(ChannelData)
+                
                 const std::string String = "java/lang/String";
                 const std::string JavaClass = "java/lang/Class";
 

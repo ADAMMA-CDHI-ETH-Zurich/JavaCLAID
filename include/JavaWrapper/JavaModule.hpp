@@ -32,6 +32,8 @@ namespace portaible
                     return channelSubscriber;
                 }
 
+                void callCallbackFunction(const std::string& functionName, jobject dataObject);
+
                 JNIEnv* getEnv();
 
             private:

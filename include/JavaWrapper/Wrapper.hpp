@@ -4,7 +4,7 @@
 
 #include "WrapperBase.hpp"
 #include "RunTime/RunTime.hpp"
-
+#include "JavaNativeSetter.hpp"
 namespace portaible
 {
     namespace JavaWrapper
@@ -152,6 +152,13 @@ namespace portaible
 
                     module->callCallbackFunction(javaCallbackFunctionToExecute, javaChannelDataObject);
                
+                }
+
+                void set(JNIEnv* env, jobject object, std::string variableName, jobject value)
+                {
+                    T* data = JNIHandle::getHandle<T>(env, object);
+                    JavaNativeSetter setter;
+                    setter.set(env, object, variableName, value);
                 }
 
         };

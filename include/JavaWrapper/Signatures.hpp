@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "Utilities/StringReplaceAll.hpp"
+#include "Utilities/StringUtils.hpp"
 
 namespace portaible
 {

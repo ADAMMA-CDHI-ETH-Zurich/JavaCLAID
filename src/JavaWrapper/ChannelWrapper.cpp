@@ -5,6 +5,7 @@
 
 #include "Logger/Logger.hpp"
 #include "JavaWrapper/JNIUtils.hpp"
+#include "JavaWrapper/WrapperMaster.hpp"
 
 #include <jni.h>
 
@@ -25,24 +26,14 @@ extern "C"
         Logger::printfln("%s", JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, wrappedChannel)).c_str());
         Logger::printfln("%s", JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, data)).c_str());
 
-        // "(Ljava/lang/String;)Lcom/example/portaible/Channel;";//
-        std::string signature = Signatures::Function::functionSignatureVoid({Signatures::Class::Channel});
-
-
-        jclass dataType = JNIUtils::getClassOfObject(env, data);
-        jmethodID mid =
-                env->GetMethodID(dataType, "post", signature.c_str());
-
-        if(mid == nullptr)
+        std::string className = JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, data));
+        if(!WrapperMaster::getInstance()->isWrapperRegisteredForClass(className))
         {
-            portaible::Logger::printfln("NULL");
-            PORTAIBLE_THROW(Exception, "Error, function publish with signature " << signature << " not found for class " << JNIUtils::getClassName(env, dataType));
+            PORTAIBLE_THROW(Exception, "Error, post was called for an object of java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
         }
-        else
-        {
-            Logger::printfln("Invoking post method");
-            env->CallVoidMethod(data, mid, wrappedChannel);
-        }
+
+        WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapper(className);
+        wrapper->post(env, wrappedChannel, data);
     }
 }
 

@@ -43,14 +43,16 @@ extern "C"
 
     }
 
-    // JNIEXPORT jbyteArray Java_com_example_portaible_AudioData_get
-    //   (JNIEnv* env, jobject thiz, jbyteArray data)
-    // {
-    //     AudioData* audioData = JNIHandle::getHandle<AudioData>(env, thiz);
-    //     jbyte* bufferPtr = env->GetByteArrayElements(data, NULL);
-    //     jsize lengthOfArray = env->GetArrayLength(data);
-        
-    //     env->ReleaseByteArrayElements(data, bufferPtr, 0);
+    JNIEXPORT jbyteArray Java_com_example_portaible_AudioData_get
+      (JNIEnv* env, jobject thiz, jbyteArray data)
+    {
+        AudioData* audioData = JNIHandle::getHandle<AudioData>(env, thiz);
+        jbyteArray byte_arr = env->NewByteArray(audioData->data.size());
 
-    // }
+        env->SetByteArrayRegion( byte_arr, 0, audioData->data.size(), (const signed char*) audioData->data.data() );
+
+
+        return byte_arr; //return the byte array..
+
+    }
 }

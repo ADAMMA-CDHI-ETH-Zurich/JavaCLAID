@@ -115,6 +115,62 @@ namespace portaible
                 {
                     return env->GetObjectClass(object);
                 }
+
+                static jfloat floatObjectToPrimitiveFloat(JNIEnv* env, jobject data)
+                {
+                    jclass objectClass = getClassOfObject(env, data);
+                    jmethodID mGetValue = env->GetMethodID(objectClass, "getValue","()Ljava/lang/Float;");
+                    if(mGetValue == NULL)
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive float. JNIUtils::floatObjectToPrimitiveFloat was called with an object of class " 
+                        << getClassName(env, objectClass) << ", but class java/lang/Float was expected.");
+                    } 
+                    jfloat value = env->CallFloatMethod(data, mGetValue);
+
+                    return value;
+                }
+
+                static jfloat doubleObjectToPrimitiveDouble(JNIEnv* env, jobject data)
+                {
+                    jclass objectClass = getClassOfObject(env, data);
+                    jmethodID mGetValue = env->GetMethodID(objectClass, "getValue","()Ljava/lang/Double;");
+                    if(mGetValue == NULL)
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive double. JNIUtils::doubleObjectToPrimitiveDouble was called with an object of class " 
+                        << getClassName(env, objectClass) << ", but class java/lang/Double was expected.");
+                    } 
+                    jfloat value = env->CallDoubleMethod(data, mGetValue);
+
+                    return value;
+                }
+
+                static bool isJavaIntegerObject(JNIEnv* env, jobject data)
+                {
+                    jclass objectClass = getClassOfObject(env, data);
+                    std::string className = getClassName(env, objectClass);
+                    return className == "java.lang.Integer";
+                }
+
+                static bool isJavaFloatObject(JNIEnv* env, jobject data)
+                {
+                    jclass objectClass = getClassOfObject(env, data);
+                    std::string className = getClassName(env, objectClass);
+                    return className == "java.lang.Float";
+                }
+
+                static bool isJavaDoubleObject(JNIEnv* env, jobject data)
+                {
+                    jclass objectClass = getClassOfObject(env, data);
+                    std::string className = getClassName(env, objectClass);
+                    return className == "java.lang.Double";
+                }
+
+                static bool isJavaStringObject(JNIEnv* env, jobject data)
+                {
+                    jclass objectClass = getClassOfObject(env, data);
+                    std::string className = getClassName(env, objectClass);
+                    return className == "java.lang.String";
+                }
         };
     }
 }

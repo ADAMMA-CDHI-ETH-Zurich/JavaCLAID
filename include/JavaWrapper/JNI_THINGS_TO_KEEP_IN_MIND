@@ -17,3 +17,11 @@ jclass dataType; // jclass you want to get the name of.
 jclass ccls = env->FindClass("java/lang/Class"); // Get base class of all Java classes
 jmethodID mid_getName = env->GetMethodID(ccls, "getName", "()Ljava/lang/String;"); // Get MethodID of "getName" of java/lang/Class
 jstring strObj = (jstring)env->CallObjectMethod(dataType, mid_getName); // Call that method on the original jclass object.
+
+
+
+
+
+
+Every function that returns an object (jobject, jclass, jstring, ....) creates a local reference, that NEEDS to be deleted manually using
+env->DeleteLocalRef. This does not necessarily delete the object, just the reference. It's like as if on the C++ side, new was called, which needs to be deleted later.

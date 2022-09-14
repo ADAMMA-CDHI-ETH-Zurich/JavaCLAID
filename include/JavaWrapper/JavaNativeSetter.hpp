@@ -183,7 +183,7 @@ namespace portaible
                      PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function, " 
                             << "but the passed object is not a java object of class " << expectedType
                             << "As \"" << property << "\" is a C++ float type, it was expected that the passed java object (the value of which shall be assigned to the C++ object) is of type " 
-                            << expectedType << ", however it is \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, this->valueToSet)) << "\".");
+                            << expectedType << ", however it is \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
                 }
 
                 template<typename T>
@@ -223,7 +223,6 @@ namespace portaible
                 template<typename T>
                 void callInt(const char* property, T& member)
                 {
-                    Logger::printfln("Call int ");
                     setPrimitive(property, member);
                 }
 
@@ -262,11 +261,9 @@ namespace portaible
                 template<typename T>
                 void callBeginClass(const char* property, T& member)
                 {
-                    Logger::printfln("Call begin class");
                     // Store class and property names for later use, might be required (e.g., to print error messages).
                     this->lastClassName = TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>();
                     this->lastClassProperty = std::string(property);
-                    Logger::printfln("Call begin class %s", lastClassName.c_str());
 
                     // For nested containers, like vector<vector<int>>, it could happen that callBeginClass() is called
                     // multiple times for the same property (i.e. for the inner and the outer vector).
@@ -283,7 +280,6 @@ namespace portaible
                 template<typename T>
                 void callEndClass(const char* property, T& member)
                 {
-                    Logger::printfln("Call end class");
 
                     // If the class was set ("deserialized") successfully,
                     // set to finish.
@@ -325,18 +321,16 @@ namespace portaible
                     {
                         this->checkTargetQueueValid(this->lastClassProperty.c_str());
 
-                        Logger::printfln("Size function");
                         int tmp = 0;
                         if(!JNIUtils::objectCallIntFunction(env, this->valueToSet, "size", "()I", tmp))
                         {
                             PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
                                 << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                                 << "As such, it was expected that the Java object has a size function to retrieve the amount of stored elements."
-                                << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, this->valueToSet)) << "\".");
+                                << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
                         }
 
                         count = tmp;
-                        Logger::printfln("Returning %d", count);
                     }
 
                     
@@ -356,7 +350,7 @@ namespace portaible
                         PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
                             << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                             << "As such, it was expected that the Java object has a size function to retrieve the amount of stored elements."
-                            << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, this->valueToSet)) << "\".");
+                            << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
                     }
 
                     count = tmp;
@@ -370,15 +364,13 @@ namespace portaible
                 void itemIndex(const size_t i)
                 {
                     int size = 0;
-                    Logger::printfln("Getting container from stack %d", this->sequenceObjectsStack.size());
                     jobject container = sequenceObjectsStack.top();
-                    Logger::printfln("Item index %d", i);
                     if(!JNIUtils::objectCallIntFunction(env, container, "size", "()I", size))
                     {
                         PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
                             << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                             << "As such, it was expected that the Java object has a size function to retrieve the amount of stored elements."
-                            << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, container)) << "\".");
+                            << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
                     }
 
 
@@ -389,14 +381,13 @@ namespace portaible
                             << "The provided Java object is a collection as wel, however it does not contain enough elements to fill the Native C++ container (C++: " << i + 1<< " vs. Java: " << size << ").");                    
                     }
 
-                    Logger::printfln("Container size %d", size);
 
                     if(!JNIUtils::getElementAtIndex(this->env, container, i, this->valueToSet))
                     {
                         PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
                                 << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                                 << "As such, it was expected that the Java object has a \"elementAt()\" to retrieve an Element by index."
-                                << "This function, however, is not available for the passed Java object of type \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, container)) << "\".");
+                                << "This function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
                     }
 
 
@@ -406,7 +397,6 @@ namespace portaible
 
                 void endSequence()
                 {
-                    Logger::printfln("Ending sequence %d", this->sequenceObjectsStack.size());
                     jobject container = this->sequenceObjectsStack.top();
                     this->sequenceObjectsStack.pop();
                 }
@@ -430,14 +420,10 @@ namespace portaible
                 template<typename NativeType>
                 void set(JNIEnv* env, NativeType& nativeObject, const std::string& targetVariable, jobject value)
                 {
-                    Logger::printfln("JavaNativeSetter::set %s", targetVariable.c_str());
                     this->originalTargetVariable = targetVariable;
                     splitToTargets(targetVariable, this->targetQueue);
 
-                    for(const std::string& target : this->targetQueue)
-                    {
-                        Logger::printfln("Target %s", target.c_str());
-                    }
+              
 
 
                     this->valueToSet = value;
@@ -453,15 +439,7 @@ namespace portaible
                         << "\"" << targetVariable << "\" was not found. Please make sure the variable was included in the reflect function of the mentioned class.");
                     }
 
-                    Logger::printfln("finished %d", nativeObject.data.size());
-                    for(const std::vector<int>& vec : nativeObject.data)
-                    {
-                        Logger::printfln("vec");
-                        for(const int& val : vec)
-                        {
-                            Logger::printfln("%d item\n", val);
-                        }
-                    }
+                    
 
                 }
 

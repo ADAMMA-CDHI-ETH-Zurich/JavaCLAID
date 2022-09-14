@@ -14,7 +14,10 @@ namespace portaible
             {
                 jclass c = env->GetObjectClass(obj);
                 // J is the type signature for long:
-                return env->GetFieldID(c, "nativeHandle", "J");
+                jfieldID fieldID = env->GetFieldID(c, "nativeHandle", "J");
+                env->DeleteLocalRef(c);
+
+                return fieldID;
             }
 
             template <typename T>

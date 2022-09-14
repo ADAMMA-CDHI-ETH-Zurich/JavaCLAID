@@ -45,6 +45,8 @@ namespace portaible
                     {
                         PORTAIBLE_THROW(Exception, "Cannot create java object, object with class signature " << className << " could not be created.");
                     }
+
+                    env->DeleteLocalRef(cls);
                 }
 
                 void spawnJavaChannelDataObjectFromData(JNIEnv* env, jobject data, jobject& channelDataObject)
@@ -69,6 +71,8 @@ namespace portaible
                     {
                         PORTAIBLE_THROW(Exception, "Cannot create java object, object with class signature " << Signatures::Class::ChannelData << " could not be created.");
                     }
+
+                    env->DeleteLocalRef(cls);
                 }
 
                 jobject channelObjectToJavaChannelObject(JNIEnv* env, Channel<T>* channel)
@@ -151,6 +155,8 @@ namespace portaible
                     spawnJavaChannelDataObjectFromData(env, javaDataObject, javaChannelDataObject);
 
                     module->callCallbackFunction(javaCallbackFunctionToExecute, javaChannelDataObject);
+                    env->DeleteLocalRef(javaDataObject);
+                    env->DeleteLocalRef(javaChannelDataObject);
                
                 }
 

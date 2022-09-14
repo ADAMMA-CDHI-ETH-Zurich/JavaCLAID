@@ -3,9 +3,14 @@
 #include <string>
 #include <jni.h>
 #include<stack>
+#include <map>
+
 #include "JNIHandle.hpp"
 #include "Exception/Exception.hpp"
 #include "TypeChecking/TypeCheckingFunctions.hpp"
+
+
+
 namespace portaible
 {
     namespace JavaWrapper
@@ -17,6 +22,7 @@ namespace portaible
                 static jobject gClassLoader;
                 static jmethodID gFindClassMethod;
                 static bool onLoadCalled;
+
 
                 static JNIEnv* getEnv() 
                 {
@@ -103,6 +109,8 @@ namespace portaible
                     return env->CallBooleanMethod(object, methodID);
                 }
 
+                
+
             public:
                 // See https://stackoverflow.com/questions/13263340/findclass-from-any-thread-in-android-jni/16302771#16302771
                 static void onLoad(JavaVM* javaVM)
@@ -131,6 +139,15 @@ namespace portaible
 
                 }
 
+                static void triggerGarbageCollector(JNIEnv* env)
+                {
+                    jclass    systemClass    = nullptr;
+                    jmethodID systemGCMethod = nullptr;
+                    // Take out the trash.
+                    systemClass    = env->FindClass("java/lang/System");
+                    systemGCMethod = env->GetStaticMethodID(systemClass, "gc", "()V");
+                    env->CallStaticVoidMethod(systemClass, systemGCMethod);
+                }
 
                 static jclass findClass(JNIEnv* env, const char* name) 
                 {
@@ -139,7 +156,19 @@ namespace portaible
                         PORTAIBLE_THROW(Exception, "Error, JNIUtils::findClass was called without prior call to onLoad. Please make sure that JNIUtils::onLoad "
                         "was called in JNI_OnLoad in native code.");
                     }
-                    return static_cast<jclass>(env->CallObjectMethod(gClassLoader, gFindClassMethod, env->NewStringUTF(name)));
+
+                    std::string className;
+
+
+                    jstring str = env->NewStringUTF(name);
+                    jclass cls = static_cast<jclass>(env->CallObjectMethod(gClassLoader, gFindClassMethod, str));
+                
+                    env->DeleteLocalRef(str);
+                    
+                    // Save class for later use, so we do not always need to query it again.
+                    // Also, might save space in the local reference table.
+                    Logger::printfln("Returning normal %s", name);
+                    return cls;
                 }
 
                 static std::string toStdString(JNIEnv *env, jobject jStr)
@@ -180,12 +209,29 @@ namespace portaible
                 // do not pass the object to this function
                 static std::string getClassName(JNIEnv* env, jclass dataType)
                 {
-                    // Find base class Class
+                    // Find base class Class to call it's getName function.
+
+                    std::string className = "java/lang/Class";
                     jclass ccls = env->FindClass("java/lang/Class");
+                
                     jmethodID mid_getName = env->GetMethodID(ccls, "getName", "()Ljava/lang/String;");
                     jstring strObj = (jstring)env->CallObjectMethod(dataType, mid_getName);
 
-                    return JNIUtils::toStdString(env, strObj);
+                    std::string stdString = JNIUtils::toStdString(env, strObj);
+
+                    env->DeleteLocalRef(ccls);
+                    env->DeleteLocalRef(strObj);
+
+                    return stdString;
+                }
+
+                static std::string getNameOfClassOfObject(JNIEnv* env, jobject object)
+                {
+                    jclass cls = getClassOfObject(env, object);
+                    std::string className = getClassName(env, cls);
+                    env->DeleteLocalRef(cls);
+
+                    return className;
                 }
 
                 static jclass getClassOfObject(JNIEnv* env, jobject object)
@@ -193,47 +239,43 @@ namespace portaible
                     return env->GetObjectClass(object);
                 }
 
+                
+
                 // ============================================================
 
                 static bool isJavaIntegerObject(JNIEnv* env, jobject data)
                 {
-                    jclass objectClass = getClassOfObject(env, data);
-                    std::string className = getClassName(env, objectClass);
+                    std::string className = getNameOfClassOfObject(env, data);
                     return className == "java.lang.Integer";
                 }
 
                 static bool isJavaFloatObject(JNIEnv* env, jobject data)
                 {
-                    jclass objectClass = getClassOfObject(env, data);
-                    std::string className = getClassName(env, objectClass);
+                    std::string className = getNameOfClassOfObject(env, data);
                     return className == "java.lang.Float";
                 }
 
                 static bool isJavaDoubleObject(JNIEnv* env, jobject data)
                 {
-                    jclass objectClass = getClassOfObject(env, data);
-                    std::string className = getClassName(env, objectClass);
+                    std::string className = getNameOfClassOfObject(env, data);
                     return className == "java.lang.Double";
                 }
 
                 static bool isJavaBooleanObject(JNIEnv* env, jobject data)
                 {
-                    jclass objectClass = getClassOfObject(env, data);
-                    std::string className = getClassName(env, objectClass);
+                    std::string className = getNameOfClassOfObject(env, data);
                     return className == "java.lang.Boolean";
                 }
 
                 static bool isJavaStringObject(JNIEnv* env, jobject data)
                 {
-                    jclass objectClass = getClassOfObject(env, data);
-                    std::string className = getClassName(env, objectClass);
+                    std::string className = getNameOfClassOfObject(env, data);
                     return className == "java.lang.String";
                 }
 
                 static bool isJavaCharObject(JNIEnv* env, jobject data)
                 {
-                    jclass objectClass = getClassOfObject(env, data);
-                    std::string className = getClassName(env, objectClass);
+                    std::string className = getNameOfClassOfObject(env, data);
                     return className == "java.lang.Character";
                 }
 
@@ -245,8 +287,7 @@ namespace portaible
                 {
                     std::string expectedJavaPrimitiveClassName = Signatures::Class::signatureToClassName(Signatures::Primitive::getJavaClassOfPrimitiveType<T>());
 
-                    jclass objectClass = getClassOfObject(env, javaObject);
-                    std::string className = getClassName(env, objectClass);
+                    std::string className = getNameOfClassOfObject(env, javaObject);
                     
                     // Does java object match the primitive?
                     if(className != expectedJavaPrimitiveClassName)
@@ -259,7 +300,10 @@ namespace portaible
                     // Integer(42).integerValue() etc.)
                     std::string signature = "()" + Signatures::Primitive::getSignatureOfPrimitiveType<T>();
                     std::string getterMethodName = getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject<T>().c_str();
+
+                    jclass objectClass = getClassOfObject(env, javaObject);
                     jmethodID mGetValue = env->GetMethodID(objectClass, getterMethodName.c_str(), signature.c_str());
+                    env->DeleteLocalRef(objectClass);
                     if(mGetValue == NULL)
                     {
                         PORTAIBLE_THROW(Exception, "Error, cannot convert java object of type \"" << className << "\" to native C++ primitive \"" << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>() << "\"."
@@ -278,6 +322,7 @@ namespace portaible
                 {
                     jclass objectClass = getClassOfObject(env, object);
                     jmethodID methodID = env->GetMethodID(objectClass, functionName.c_str(), signature.c_str());
+                    env->DeleteLocalRef(objectClass);
                     if(methodID == NULL)
                     {
                         return false;
@@ -291,40 +336,44 @@ namespace portaible
                 {    
                     jclass objectClass = getClassOfObject(env, container);
                     jmethodID methodID = env->GetMethodID(objectClass, "elementAt", "(I)Ljava/lang/Object;");
+                    env->DeleteLocalRef(objectClass);
+                    
                     if(methodID == NULL)
                     {
                         return false;
                     } 
                     returnValue = env->CallObjectMethod(container, methodID, index);
 
+
                     return true;
                 }
 
                 static jobject createJavaVector(JNIEnv* env, int size)
                 {
-                    // std::string className = Signatures::Class::Vector;
-                    // jclass cls = JNIUtils::findClass(env, className.c_str());
+                    std::string className = Signatures::Class::Vector;
+                    jclass cls = JNIUtils::findClass(env, className.c_str());
 
-                    // if(cls == nullptr)
-                    // {
-                    //     PORTAIBLE_THROW(Exception, "Cannot create java Vector object, failed to lookup class " << className);
-                    // }
+                    if(cls == nullptr)
+                    {
+                        PORTAIBLE_THROW(Exception, "Cannot create java Vector object, failed to lookup class " << className);
+                    }
 
-                    // jmethodID constructor = env->GetMethodID(cls, "<init>", "(I)V");
+                    jmethodID constructor = env->GetMethodID(cls, "<init>", "(I)V");
 
-                    // if(constructor == nullptr)
-                    // {
-                    //     PORTAIBLE_THROW(Exception, "Cannot create java Vector object, failed to lookup constructor for class " << className);
-                    // }
+                    if(constructor == nullptr)
+                    {
+                        PORTAIBLE_THROW(Exception, "Cannot create java Vector object, failed to lookup constructor for class " << className);
+                    }
 
-                    // javaObject = env->NewObject(cls, constructor, size);
+                    jobject javaObject = env->NewObject(cls, constructor, size);
 
-                    // if(javaObject == nullptr)
-                    // {
-                    //     PORTAIBLE_THROW(Exception, "Cannot create java Vector object, object with class signature " << className << " could not be created.");
-                    // }
+                    if(javaObject == nullptr)
+                    {
+                        PORTAIBLE_THROW(Exception, "Cannot create java Vector object, object with class signature " << className << " could not be created.");
+                    }
+                    env->DeleteLocalRef(cls);
 
-                    // return javaObject;
+                    return javaObject;
                 }
         };
     }

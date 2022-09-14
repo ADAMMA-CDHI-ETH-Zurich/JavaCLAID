@@ -27,24 +27,22 @@ namespace portaible
             args.group = NULL; // you might want to assign the java thread to a ThreadGroup
             this->javaVM->AttachCurrentThread(&env, &args);
 
+            jclass cls = JNIUtils::getClassOfObject(env, javaObject);
             jmethodID mid =
-                    env->GetMethodID(JNIUtils::getClassOfObject(env, javaObject), "initialize", "()V");
-            Logger::printfln("JavaModule 2");
+                    env->GetMethodID(cls, "initialize", "()V");
 
             if(mid == nullptr)
             {
-                portaible::Logger::printfln("NULL");
                 PORTAIBLE_THROW(Exception, "Error, function initialize with signature void () not found for class "
-                    << JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, javaObject)));
+                    << JNIUtils::getClassName(env, cls));
             }
             else
             {
-                                Logger::printfln("JavaModule 3");
-
                 // Return should be of type java class "Channel" (portaible.JavaWrappers.Channel)
                 env->CallVoidMethod(javaObject, mid);
 
             }
+            env->DeleteLocalRef(cls);
         }
 
         jobject JavaModule::publish(JNIEnv* env, jclass dataType, jstring channelID)
@@ -77,20 +75,22 @@ namespace portaible
 
         void JavaModule::callCallbackFunction(const std::string& functionName, jobject dataObject)
         {
-            
+            jclass cls = JNIUtils::getClassOfObject(env, javaObject);
             jmethodID mid =
-                    env->GetMethodID(JNIUtils::getClassOfObject(env, javaObject), functionName.c_str(), Signatures::Function::functionSignatureVoid({Signatures::Class::ChannelData}).c_str());
+                    env->GetMethodID(cls, functionName.c_str(), Signatures::Function::functionSignatureVoid({Signatures::Class::ChannelData}).c_str());
             
             if(mid == nullptr)
             {
                 portaible::Logger::printfln("NULL");
                 PORTAIBLE_THROW(Exception, "Error, could not call callback function. Function " << functionName << " with signature void " << Signatures::Class::ChannelData << " not found for class "
-                    << JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, javaObject)));
+                    << JNIUtils::getNameOfClassOfObject(env, dataObject));
             }
             else
             {
                 env->CallVoidMethod(javaObject, mid, dataObject);
             }
+
+            env->DeleteLocalRef(cls);
         }
     
 

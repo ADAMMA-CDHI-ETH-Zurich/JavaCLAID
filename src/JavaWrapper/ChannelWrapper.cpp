@@ -22,11 +22,8 @@ extern "C"
         // it was created like Channel<AudioData> audioChannel = module.publish(AudioData.class, channelID).
         // Therefore, audioChannel.post() has to be called with an object of type AudioData, which
         // is ensured at compile time.
-        Logger::printfln("Post test");
-        Logger::printfln("%s", JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, wrappedChannel)).c_str());
-        Logger::printfln("%s", JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, data)).c_str());
-
-        std::string className = JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, data));
+    
+        std::string className = JNIUtils::getNameOfClassOfObject(env, data);
         if(!WrapperMaster::getInstance()->isWrapperRegisteredForClass(className))
         {
             PORTAIBLE_THROW(Exception, "Error, post was called for an object of java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");

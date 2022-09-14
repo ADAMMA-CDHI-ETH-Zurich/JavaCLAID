@@ -154,11 +154,13 @@ namespace portaible
                
                 }
 
-                void set(JNIEnv* env, jobject object, std::string variableName, jobject value)
+                void set(JNIEnv* env, jobject object, jstring jVariableName, jobject value)
                 {
+                    std::string variableName = JNIUtils::toStdString(env, jVariableName);
+                    Logger::printfln("Setting %s", variableName.c_str());
                     T* data = JNIHandle::getHandle<T>(env, object);
                     JavaNativeSetter setter;
-                    setter.set(env, object, variableName, value);
+                    setter.set(env, *data, variableName, value);
                 }
 
         };

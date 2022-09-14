@@ -2,6 +2,7 @@
 
 #include <string>
 #include <jni.h>
+#include<stack>
 #include "JNIHandle.hpp"
 #include "Exception/Exception.hpp"
 
@@ -119,7 +120,8 @@ namespace portaible
                 static jfloat floatObjectToPrimitiveFloat(JNIEnv* env, jobject data)
                 {
                     jclass objectClass = getClassOfObject(env, data);
-                    jmethodID mGetValue = env->GetMethodID(objectClass, "getValue","()Ljava/lang/Float;");
+                    Logger::printfln("Class of object %s", getClassName(env, objectClass).c_str());
+                    jmethodID mGetValue = env->GetMethodID(objectClass, "floatValue", "()F");
                     if(mGetValue == NULL)
                     {
                         PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive float. JNIUtils::floatObjectToPrimitiveFloat was called with an object of class " 
@@ -133,13 +135,55 @@ namespace portaible
                 static jfloat doubleObjectToPrimitiveDouble(JNIEnv* env, jobject data)
                 {
                     jclass objectClass = getClassOfObject(env, data);
-                    jmethodID mGetValue = env->GetMethodID(objectClass, "getValue","()Ljava/lang/Double;");
+                    jmethodID mGetValue = env->GetMethodID(objectClass, "doubleValue","()D");
                     if(mGetValue == NULL)
                     {
                         PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive double. JNIUtils::doubleObjectToPrimitiveDouble was called with an object of class " 
                         << getClassName(env, objectClass) << ", but class java/lang/Double was expected.");
                     } 
                     jfloat value = env->CallDoubleMethod(data, mGetValue);
+
+                    return value;
+                }
+
+                static jfloat integerObjectToPrimitiveInteger(JNIEnv* env, jobject data)
+                {
+                    jclass objectClass = getClassOfObject(env, data);
+                    jmethodID mGetValue = env->GetMethodID(objectClass, "intValue","()I");
+                    if(mGetValue == NULL)
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive integer. JNIUtils::integerObjectToPrimitiveInteger was called with an object of class " 
+                        << getClassName(env, objectClass) << ", but class java/lang/Integer was expected.");
+                    } 
+                    jfloat value = env->CallDoubleMethod(data, mGetValue);
+
+                    return value;
+                }
+
+                static jfloat booleanObjectToPrimitiveBoolean(JNIEnv* env, jobject data)
+                {
+                    jclass objectClass = getClassOfObject(env, data);
+                    jmethodID mGetValue = env->GetMethodID(objectClass, "booleanValue","()B");
+                    if(mGetValue == NULL)
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive boolean. JNIUtils::booleanObjectToPrimitiveBoolean was called with an object of class " 
+                        << getClassName(env, objectClass) << ", but class java/lang/Boolean was expected.");
+                    } 
+                    jfloat value = env->CallBooleanMethod(data, mGetValue);
+
+                    return value;
+                }
+
+                static jfloat charObjectToPrimitiveChar(JNIEnv* env, jobject data)
+                {
+                    jclass objectClass = getClassOfObject(env, data);
+                    jmethodID mGetValue = env->GetMethodID(objectClass, "charValue","()C");
+                    if(mGetValue == NULL)
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive boolean. JNIUtils::charObjectToPrimitiveChar was called with an object of class " 
+                        << getClassName(env, objectClass) << ", but class java/lang/Character was expected.");
+                    } 
+                    jfloat value = env->CallCharMethod(data, mGetValue);
 
                     return value;
                 }
@@ -165,11 +209,51 @@ namespace portaible
                     return className == "java.lang.Double";
                 }
 
+                static bool isJavaBooleanObject(JNIEnv* env, jobject data)
+                {
+                    jclass objectClass = getClassOfObject(env, data);
+                    std::string className = getClassName(env, objectClass);
+                    return className == "java.lang.Boolean";
+                }
+
                 static bool isJavaStringObject(JNIEnv* env, jobject data)
                 {
                     jclass objectClass = getClassOfObject(env, data);
                     std::string className = getClassName(env, objectClass);
                     return className == "java.lang.String";
+                }
+
+                static bool isJavaCharObject(JNIEnv* env, jobject data)
+                {
+                    jclass objectClass = getClassOfObject(env, data);
+                    std::string className = getClassName(env, objectClass);
+                    return className == "java.lang.Character";
+                }
+
+                static bool objectCallIntFunction(JNIEnv* env, jobject object, const std::string& functionName, const std::string& signature, int& returnValue)
+                {
+                    jclass objectClass = getClassOfObject(env, object);
+                    jmethodID methodID = env->GetMethodID(objectClass, functionName.c_str(), signature.c_str());
+                    if(methodID == NULL)
+                    {
+                        return false;
+                    } 
+                    returnValue = env->CallIntMethod(object, methodID);
+
+                    return true;
+                }
+
+                static bool getElementAtIndex(JNIEnv* env, jobject container, const size_t index, jobject& returnValue)
+                {    
+                    jclass objectClass = getClassOfObject(env, container);
+                    jmethodID methodID = env->GetMethodID(objectClass, "elementAt", Signatures::Function::functionSignature({"I"}, Signatures::Class::JavaObject).c_str());
+                    if(methodID == NULL)
+                    {
+                        return false;
+                    } 
+                    returnValue = env->CallObjectMethod(container, methodID, index);
+
+                    return true;
                 }
         };
     }

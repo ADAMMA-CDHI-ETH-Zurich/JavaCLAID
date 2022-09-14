@@ -21,12 +21,22 @@ namespace portaible
                 CLASS_SIGNATURE(ChannelData)
                 
                 const std::string String = "java/lang/String";
+                const std::string FloatClass = "java/lang/Float";
                 const std::string JavaClass = "java/lang/Class";
+                const std::string JavaObject = "java/lang/Object";
+                const std::string Vector = "java/util/Vector";
 
                 static std::string classNameToSignature(const std::string& javaClassName)
                 {
                     std::string result = javaClassName;
                     stringReplaceAll(result, ".", "/");
+                    return result;
+                }
+
+                static std::string signatureToClassName(const std::string& javaClassName)
+                {
+                    std::string result = javaClassName;
+                    stringReplaceAll(result, "/", ".");
                     return result;
                 }
             }

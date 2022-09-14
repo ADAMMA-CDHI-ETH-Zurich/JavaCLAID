@@ -53,6 +53,5 @@ extern "C"
 
 
         return byte_arr; //return the byte array..
-
     }
 }

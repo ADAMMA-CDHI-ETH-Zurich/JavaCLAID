@@ -21,6 +21,19 @@ extern "C"
         wrapper->assignInstance(env, object);
     }
 
+    JNIEXPORT void JNICALL Java_com_example_portaible_Wrapper_set(JNIEnv* env, jobject object, jstring variableName, jobject value)
+    {
+        std::string className = JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, object));
+        if(!WrapperMaster::getInstance()->isWrapperRegisteredForClass(className))
+        {
+            PORTAIBLE_THROW(Exception, "Error, set was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
+        }
+
+        WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapper(className);
+
+        wrapper->set(env, object, variableName, value);
+    }
+
     // // Native class = cpp class
     // JNIEXPORT void JNICALL Java_com_example_portaible_Wrapper_registerWrapperForNativeClass(JNIEnv* env, jclass class, jstring nativeClass)
     // {

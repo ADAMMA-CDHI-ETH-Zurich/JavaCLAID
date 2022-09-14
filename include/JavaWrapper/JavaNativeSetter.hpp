@@ -124,9 +124,7 @@ namespace portaible
                 std::stack<jobject> sequenceObjectsStack;
 
                 bool finished = false;
-
-                // Would be true if target variable is something like vector<vector<int>>
-                bool nestedClass = false;
+              
                 JNIEnv* env;
 
                 // Stores the compiler specific compile time name of the class that was last used to
@@ -149,12 +147,18 @@ namespace portaible
 
                 bool isCurrentTarget(const char* property)
                 {
-                    Logger::printfln("Is curent target %s %s", property, targetQueue.front().c_str(), std::string(property) == targetQueue.front());
                     if(targetQueue.size() == 0)
                     {
                         return false;
                     }
-                    return std::string(property) == targetQueue.front();
+                    
+
+                    return std::string(property) == targetQueue.front() || isSequence();
+                }
+
+                bool isSequence()
+                {
+                    return this->sequenceObjectsStack.size() > 0;
                 }
 
                 bool checkTargetQueueValid(const char* property)
@@ -174,6 +178,34 @@ namespace portaible
                     return true;
                 }
 
+                void throwTypeMismatch(const char* property, std::string expectedType)
+                {
+                     PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function, " 
+                            << "but the passed object is not a java object of class " << expectedType
+                            << "As \"" << property << "\" is a C++ float type, it was expected that the passed java object (the value of which shall be assigned to the C++ object) is of type " 
+                            << expectedType << ", however it is \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, this->valueToSet)) << "\".");
+                }
+
+                template<typename T>
+                void setPrimitive(const char* property, T& member)
+                {
+                    if(this->finished)
+                        return;
+
+                    if(!this->isCurrentTarget(property))
+                    {
+                        return;
+                    }
+
+                    this->checkTargetQueueValid(property);
+
+                    JNIUtils::javaPrimitiveObjectToNativePrimitive(env, member, this->valueToSet);
+         
+
+                    if(!this->isSequence())
+                        finished = true;
+                }
+
             public:
                 
                 JavaNativeSetter()
@@ -184,100 +216,29 @@ namespace portaible
                 template<typename T>
                 void callFloatOrDouble(const char* property, T& member)
                 {
-                    if(this->finished)
-                        return;
-
-                    if(!this->isCurrentTarget(property))
-                    {
-                        return;
-                    }
-
-                    this->checkTargetQueueValid(property);
-
-                    if(std::is_same<T, float>::value)
-                    {
-                                            Logger::printfln("Call 2");
-
-                        if(!JNIUtils::isJavaFloatObject(this->env, this->valueToSet))
-                        {
-                            PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function, " 
-                            << "but the passed object is not a java object of class java/lang/Float."
-                            << "As \"" << property << "\" is a C++ float type, it was expected that the passed java object (the value of which shall be assigned to the C++ object) is of type " 
-                            << "java/lang/Float, however it is \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, this->valueToSet)) << "\".");
-                        }
-                                            Logger::printfln("Call 3");
-
-                        member = JNIUtils::floatObjectToPrimitiveFloat(this->env, valueToSet);
-                        finished = true;
-                    }
-                    else
-                    {
-                        if(!JNIUtils::isJavaDoubleObject(this->env, this->valueToSet))
-                        {
-                            PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function, " 
-                            << "but the passed object is not a java object of class java/lang/Double."
-                            << "As \"" << property << "\" is a C++ double type, it was expected that the passed java object (the value of which shall be assigned to the C++ object) is of type " 
-                            << "java/lang/Double, however it is \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, this->valueToSet)) << "\".");
-                        }
-                        member = JNIUtils::doubleObjectToPrimitiveDouble(this->env, this->valueToSet);
-                        finished = true;
-                    }
+                    setPrimitive(property, member);
                 }   
-
 
                 // Also includes any variants of signed, unsigned, short, long, long long, ...
                 template<typename T>
                 void callInt(const char* property, T& member)
                 {
-                    Logger::printfln("CallInt %s", property);
-                    if(this->finished)
-                        return;
-
-                    if(!this->isCurrentTarget(property))
-                    {
-                        return;
-                    }
-
-                    this->checkTargetQueueValid(property);
-
-                    if(!JNIUtils::isJavaIntegerObject(this->env, this->valueToSet))
-                    {
-                        PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function, " 
-                        << "but the passed object is not a java object of class java/lang/Integer."
-                        << "As \"" << property << "\" is a C++ integer type, it was expected that the passed java object (the value of which shall be assigned to the C++ object) is of type " 
-                        << "java/lang/Integer, however it is \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, this->valueToSet)) << "\".");
-                    }
-
-                    member = JNIUtils::integerObjectToPrimitiveInteger(this->env, valueToSet);
-                    finished = true;
+                    Logger::printfln("Call int ");
+                    setPrimitive(property, member);
                 }
 
                 void callBool(const char* property, bool& member)
                 {
-                    if(this->finished)
-                        return;
-
-                    if(!this->isCurrentTarget(property))
-                    {
-                        return;
-                    }
-
-                    this->checkTargetQueueValid(property);
-
-                    if(!JNIUtils::isJavaBooleanObject(this->env, this->valueToSet))
-                    {
-                        PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function, " 
-                        << "but the passed object is not a java object of class java/lang/Integer."
-                        << "As \"" << property << "\" is a C++ bool type, it was expected that the passed java object (the value of which shall be assigned to the C++ object) is of type " 
-                        << "java/lang/Boolean, however it is \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, this->valueToSet)) << "\".");
-                    }
-
-                    member = JNIUtils::booleanObjectToPrimitiveBoolean(this->env, valueToSet);
-                    finished = true;
+                    setPrimitive(property, member);
                 }
 
                 void callChar(const char* property, char& member)
                 {
+                    setPrimitive(property, member);
+                }
+
+                void callString(const char* property, std::string& member)
+                {
                     if(this->finished)
                         return;
 
@@ -288,94 +249,48 @@ namespace portaible
 
                     this->checkTargetQueueValid(property);
 
-                    if(!JNIUtils::isJavaCharObject(this->env, this->valueToSet))
+                    if(!JNIUtils::isJavaStringObject(this->env, this->valueToSet))
                     {
-                        PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function, " 
-                        << "but the passed object is not a java object of class java/lang/Integer."
-                        << "As \"" << property << "\" is a C++ bool type, it was expected that the passed java object (the value of which shall be assigned to the C++ object) is of type " 
-                        << "java/lang/Boolean, however it is \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, this->valueToSet)) << "\".");
+                        throwTypeMismatch(property, "java/lang/String");
                     }
 
-                    member = JNIUtils::charObjectToPrimitiveChar(this->env, valueToSet);
-                    finished = true;
-                }
-
-                void callString(const char* property, std::string& member)
-                {
+                    member = JNIUtils::toStdString(this->env, valueToSet);
+                    if(!this->isSequence())
+                        finished = true;
                 }
 
                 template<typename T>
                 void callBeginClass(const char* property, T& member)
                 {
+                    Logger::printfln("Call begin class");
                     // Store class and property names for later use, might be required (e.g., to print error messages).
                     this->lastClassName = TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>();
                     this->lastClassProperty = std::string(property);
+                    Logger::printfln("Call begin class %s", lastClassName.c_str());
 
-                    if(isCurrentTarget(property))
+                    // For nested containers, like vector<vector<int>>, it could happen that callBeginClass() is called
+                    // multiple times for the same property (i.e. for the inner and the outer vector).
+                    // However, in callEndClass, finished will be set property is the current target,
+                    // which would lead to stop assignment of any further variables (nested vectors).
+                    // This, if callBeginClass is called, and property is still the current target, we set finished to false again.
+                    // Only the LAST callEndClass of nested containers should finish the process.
+                    if(this->isCurrentTarget(property))
                     {
-                        if(this->targetQueue.size() > 0)
-                        {
-                            // The target really is the current class.
-                            // Need to see if there is an wrapper available.
-                            // Unsupported for now.
-                            
-
-                            jclass objectClass = JNIUtils::getClassOfObject(env, this->valueToSet);
-                            if(is_specialization_of<T, std::vector>::value)
-                            {  
-                                // C++ std::vector can be deserialized from Java Vector only
-                                if(JNIUtils::getClassName(env, objectClass) == Signatures::Class::signatureToClassName(Signatures::Class::Vector))
-                                {
-                                    nestedClass = true;
-                                }
-                                else
-                                {
-                                    // Tried to deserialize C++ std::vector from something else than Java Vector
-                                    PORTAIBLE_THROW(Exception, "Error, tried to set Native C++ member \"" << this->lastClassProperty << "\" of type \"" << this->lastClassName << "\"."
-                                    << "However, Java object is of type " << JNIUtils::getClassName(env, objectClass) << ", but " << Signatures::Class::signatureToClassName(Signatures::Class::Vector) << " was expected.");
-                                }
-                            }
-                            else
-                            {
-                                PORTAIBLE_THROW(Exception, "Error in setting Native C++ member \"" << this->lastClassProperty << "\" of type \"" << this->lastClassName << "\" from Java."
-                                << "Target variable \"" << this->originalTargetVariable << "\" cannot be set from a Java object directly. Please adress individual members of that class, e.g. set(\"Person.Job.Salary\", 42), "
-                                << "instead of doing set(\"Person\", PersonObject).");
-                            }
-                        }
-
-                        
+                        finished = false;
                     }
-                    else if(this->nestedClass)
-                    {
-                        jclass objectClass = JNIUtils::getClassOfObject(env, this->valueToSet);
-                        if(is_specialization_of<T, std::vector>::value)
-                        {  
-                            // C++ std::vector can be deserialized from Java Vector only
-                            if(JNIUtils::getClassName(env, objectClass) == Signatures::Class::signatureToClassName(Signatures::Class::Vector))
-                            {
-                                nestedClass = true;
-                            }
-                            else
-                            {
-                                // Tried to deserialize C++ std::vector from something else than Java Vector
-                                PORTAIBLE_THROW(Exception, "Error, tried to set Native C++ member \"" << this->lastClassProperty << "\" of type \"" << this->lastClassName << "\"."
-                                << "However, Java object is of type " << JNIUtils::getClassName(env, objectClass) << ", but " << Signatures::Class::signatureToClassName(Signatures::Class::Vector) << " was expected.");
-                            }
-                        }
-                        else
-                        {
-                            PORTAIBLE_THROW(Exception, "Error in setting Native C++ member \"" << this->lastClassProperty << "\" of type \"" << this->lastClassName << "\" from Java."
-                            << "Target variable \"" << this->originalTargetVariable << "\" cannot be set from a Java object directly. Please adress individual members of that class, e.g. set(\"Person.Job.Salary\", 42), "
-                            << "instead of doing set(\"Person\", PersonObject).");
-                        }
-                    }
-
-
                 }
 
                 template<typename T>
                 void callEndClass(const char* property, T& member)
                 {
+                    Logger::printfln("Call end class");
+
+                    // If the class was set ("deserialized") successfully,
+                    // set to finish.
+                    if(this->isCurrentTarget(property) && !finished)
+                    {
+                        this->finished = true;
+                    }
 
                 }
 
@@ -405,7 +320,6 @@ namespace portaible
                     // Check if element has length variable.. 
                     // I.e. this->valueToSet -> does it have a function size().
                     // valueToSet needs to be of type Vector, ArrayList, Map or whatever.
-                    Logger::printfln("Target count %s %d %d", this->lastClassProperty.c_str(), this->isCurrentTarget(this->lastClassProperty.c_str()), !this->finished);
 
                     if(this->isCurrentTarget(this->lastClassProperty.c_str()) && !this->finished)
                     {
@@ -422,6 +336,7 @@ namespace portaible
                         }
 
                         count = tmp;
+                        Logger::printfln("Returning %d", count);
                     }
 
                     
@@ -455,12 +370,15 @@ namespace portaible
                 void itemIndex(const size_t i)
                 {
                     int size = 0;
-                    if(!JNIUtils::objectCallIntFunction(env, this->valueToSet, "size", "()I", size))
+                    Logger::printfln("Getting container from stack %d", this->sequenceObjectsStack.size());
+                    jobject container = sequenceObjectsStack.top();
+                    Logger::printfln("Item index %d", i);
+                    if(!JNIUtils::objectCallIntFunction(env, container, "size", "()I", size))
                     {
                         PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
                             << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                             << "As such, it was expected that the Java object has a size function to retrieve the amount of stored elements."
-                            << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, this->valueToSet)) << "\".");
+                            << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, container)) << "\".");
                     }
 
 
@@ -471,25 +389,24 @@ namespace portaible
                             << "The provided Java object is a collection as wel, however it does not contain enough elements to fill the Native C++ container (C++: " << i + 1<< " vs. Java: " << size << ").");                    
                     }
 
-                    jobject container = this->sequenceObjectsStack.top();
+                    Logger::printfln("Container size %d", size);
+
                     if(!JNIUtils::getElementAtIndex(this->env, container, i, this->valueToSet))
                     {
                         PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
                                 << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                                 << "As such, it was expected that the Java object has a \"elementAt()\" to retrieve an Element by index."
-                                << "This function, however, is not available for the passed Java object of type \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, this->valueToSet)) << "\".");
+                                << "This function, however, is not available for the passed Java object of type \"" << JNIUtils::getClassName(this->env, JNIUtils::getClassOfObject(this->env, container)) << "\".");
                     }
 
 
                 }
 
-                void endItem()
-                {
-                    // TODO: Remove endItem
-                }
+         
 
                 void endSequence()
                 {
+                    Logger::printfln("Ending sequence %d", this->sequenceObjectsStack.size());
                     jobject container = this->sequenceObjectsStack.top();
                     this->sequenceObjectsStack.pop();
                 }
@@ -534,6 +451,16 @@ namespace portaible
                         PORTAIBLE_THROW(Exception, "Tried to assign a value to member variable \"" << targetVariable << "\" to Native C++ class \""
                         << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<NativeType>() << "\" from Java, however a reflected member variable with name "
                         << "\"" << targetVariable << "\" was not found. Please make sure the variable was included in the reflect function of the mentioned class.");
+                    }
+
+                    Logger::printfln("finished %d", nativeObject.data.size());
+                    for(const std::vector<int>& vec : nativeObject.data)
+                    {
+                        Logger::printfln("vec");
+                        for(const int& val : vec)
+                        {
+                            Logger::printfln("%d item\n", val);
+                        }
                     }
 
                 }

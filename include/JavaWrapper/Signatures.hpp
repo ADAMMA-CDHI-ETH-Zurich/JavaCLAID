@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Utilities/StringUtils.hpp"
+#include "Traits/is_integer_no_bool.hpp"
 
 namespace portaible
 {
@@ -39,6 +40,86 @@ namespace portaible
                     stringReplaceAll(result, "/", ".");
                     return result;
                 }
+            }
+
+            namespace Primitive
+            {
+                template<typename T>
+                static typename std::enable_if<is_integer_no_bool<T>::value, std::string>::type
+                getJavaClassOfPrimitiveType()
+                {
+                    return "java/lang/Integer";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, float>::value, std::string>::type
+                getJavaClassOfPrimitiveType()
+                {
+                    return "java/lang/Float";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, double>::value, std::string>::type
+                getJavaClassOfPrimitiveType()
+                {
+                    return "java/lang/Double";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, char>::value, std::string>::type
+                getJavaClassOfPrimitiveType()
+                {
+                    return "java/lang/Character";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, bool>::value, std::string>::type
+                getJavaClassOfPrimitiveType()
+                {
+                    return "java/lang/Boolean";
+                }
+
+                // =====================================================================
+
+                template<typename T>
+                typename std::enable_if<is_integer_no_bool<T>::value, std::string>::type
+                getSignatureOfPrimitiveType()
+                {
+                    return "I";
+                }
+
+                template<typename T>
+                typename std::enable_if<std::is_same<T, float>::value, std::string>::type
+                getSignatureOfPrimitiveType()
+                {
+                    return "F";
+                }
+
+                template<typename T>
+                typename std::enable_if<std::is_same<T, double>::value, std::string>::type
+                getSignatureOfPrimitiveType()
+                {
+                    return "D";
+                }
+
+                template<typename T>
+                typename std::enable_if<std::is_same<T, char>::value, std::string>::type
+                getSignatureOfPrimitiveType()
+                {
+                    return "C";
+                }
+
+                template<typename T>
+                typename std::enable_if<std::is_same<T, bool>::value, std::string>::type
+                getSignatureOfPrimitiveType()
+                {
+                    return "B";
+                }
+
+                
+
+                
+
             }
 
             namespace Function

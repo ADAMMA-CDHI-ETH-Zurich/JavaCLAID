@@ -5,7 +5,7 @@
 #include<stack>
 #include "JNIHandle.hpp"
 #include "Exception/Exception.hpp"
-
+#include "TypeChecking/TypeCheckingFunctions.hpp"
 namespace portaible
 {
     namespace JavaWrapper
@@ -29,6 +29,78 @@ namespace portaible
                         }
                     }
                     return env;
+                }
+
+                template<typename T>
+                static typename std::enable_if<is_integer_no_bool<T>::value, std::string>::type
+                getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
+                {
+                    return "intValue";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, float>::value, std::string>::type
+                getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
+                {
+                    return "floatValue";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, double>::value, std::string>::type
+                getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
+                {
+                    return "doubleValue";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, char>::value, std::string>::type
+                getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
+                {
+                    return "charValue";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, bool>::value, std::string>::type
+                getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
+                {
+                    return "booleanValue";
+                }
+
+                // ================================================================================
+
+                template<typename T>
+                static typename std::enable_if<is_integer_no_bool<T>::value, T>::type
+                callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
+                {
+                    return env->CallIntMethod(object, methodID);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, float>::value, T>::type
+                callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
+                {
+                    return env->CallFloatMethod(object, methodID);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, double>::value, T>::type
+                callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
+                {
+                    return env->CallDoubleMethod(object, methodID);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, char>::value, T>::type
+                callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
+                {
+                    return env->CallCharMethod(object, methodID);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, bool>::value, T>::type
+                callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
+                {
+                    return env->CallBooleanMethod(object, methodID);
                 }
 
             public:
@@ -70,6 +142,10 @@ namespace portaible
                     return static_cast<jclass>(env->CallObjectMethod(gClassLoader, gFindClassMethod, env->NewStringUTF(name)));
                 }
 
+                static std::string toStdString(JNIEnv *env, jobject jStr)
+                {
+                    return toStdString(env, static_cast<jstring>(jStr));
+                }
 
                 static std::string toStdString(JNIEnv *env, jstring jStr)
                 {
@@ -117,76 +193,7 @@ namespace portaible
                     return env->GetObjectClass(object);
                 }
 
-                static jfloat floatObjectToPrimitiveFloat(JNIEnv* env, jobject data)
-                {
-                    jclass objectClass = getClassOfObject(env, data);
-                    Logger::printfln("Class of object %s", getClassName(env, objectClass).c_str());
-                    jmethodID mGetValue = env->GetMethodID(objectClass, "floatValue", "()F");
-                    if(mGetValue == NULL)
-                    {
-                        PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive float. JNIUtils::floatObjectToPrimitiveFloat was called with an object of class " 
-                        << getClassName(env, objectClass) << ", but class java/lang/Float was expected.");
-                    } 
-                    jfloat value = env->CallFloatMethod(data, mGetValue);
-
-                    return value;
-                }
-
-                static jfloat doubleObjectToPrimitiveDouble(JNIEnv* env, jobject data)
-                {
-                    jclass objectClass = getClassOfObject(env, data);
-                    jmethodID mGetValue = env->GetMethodID(objectClass, "doubleValue","()D");
-                    if(mGetValue == NULL)
-                    {
-                        PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive double. JNIUtils::doubleObjectToPrimitiveDouble was called with an object of class " 
-                        << getClassName(env, objectClass) << ", but class java/lang/Double was expected.");
-                    } 
-                    jfloat value = env->CallDoubleMethod(data, mGetValue);
-
-                    return value;
-                }
-
-                static jfloat integerObjectToPrimitiveInteger(JNIEnv* env, jobject data)
-                {
-                    jclass objectClass = getClassOfObject(env, data);
-                    jmethodID mGetValue = env->GetMethodID(objectClass, "intValue","()I");
-                    if(mGetValue == NULL)
-                    {
-                        PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive integer. JNIUtils::integerObjectToPrimitiveInteger was called with an object of class " 
-                        << getClassName(env, objectClass) << ", but class java/lang/Integer was expected.");
-                    } 
-                    jfloat value = env->CallDoubleMethod(data, mGetValue);
-
-                    return value;
-                }
-
-                static jfloat booleanObjectToPrimitiveBoolean(JNIEnv* env, jobject data)
-                {
-                    jclass objectClass = getClassOfObject(env, data);
-                    jmethodID mGetValue = env->GetMethodID(objectClass, "booleanValue","()B");
-                    if(mGetValue == NULL)
-                    {
-                        PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive boolean. JNIUtils::booleanObjectToPrimitiveBoolean was called with an object of class " 
-                        << getClassName(env, objectClass) << ", but class java/lang/Boolean was expected.");
-                    } 
-                    jfloat value = env->CallBooleanMethod(data, mGetValue);
-
-                    return value;
-                }
-
-                static jfloat charObjectToPrimitiveChar(JNIEnv* env, jobject data)
-                {
-                    jclass objectClass = getClassOfObject(env, data);
-                    jmethodID mGetValue = env->GetMethodID(objectClass, "charValue","()C");
-                    if(mGetValue == NULL)
-                    {
-                        PORTAIBLE_THROW(Exception, "Error, cannot convert object to primitive boolean. JNIUtils::charObjectToPrimitiveChar was called with an object of class " 
-                        << getClassName(env, objectClass) << ", but class java/lang/Character was expected.");
-                    } 
-                    jfloat value = env->CallCharMethod(data, mGetValue);
-
-                    return value;
-                }
+                // ============================================================
 
                 static bool isJavaIntegerObject(JNIEnv* env, jobject data)
                 {
@@ -230,6 +237,43 @@ namespace portaible
                     return className == "java.lang.Character";
                 }
 
+                // ================================================================================================
+
+                // Set primitive
+                template<typename T>
+                static void javaPrimitiveObjectToNativePrimitive(JNIEnv* env, T& nativePrimitive, jobject& javaObject)
+                {
+                    std::string expectedJavaPrimitiveClassName = Signatures::Class::signatureToClassName(Signatures::Primitive::getJavaClassOfPrimitiveType<T>());
+
+                    jclass objectClass = getClassOfObject(env, javaObject);
+                    std::string className = getClassName(env, objectClass);
+                    
+                    // Does java object match the primitive?
+                    if(className != expectedJavaPrimitiveClassName)
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, cannot convert javaObject to native C++ primitive " << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>() << "."
+                        << "Java object is of type \"" << className << "\", however an object of type \"" << expectedJavaPrimitiveClassName << "\" was expected.");
+                    }
+
+                    // Get the function of the java object that can be used to retrieve the primitive (e.g., integerValue, floatValue, ... as in
+                    // Integer(42).integerValue() etc.)
+                    std::string signature = "()" + Signatures::Primitive::getSignatureOfPrimitiveType<T>();
+                    std::string getterMethodName = getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject<T>().c_str();
+                    jmethodID mGetValue = env->GetMethodID(objectClass, getterMethodName.c_str(), signature.c_str());
+                    if(mGetValue == NULL)
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, cannot convert java object of type \"" << className << "\" to native C++ primitive \"" << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>() << "\"."
+                        << "Method \"" << getterMethodName << "\" was not found in object of type \"" << className << "\"");
+                    } 
+
+                    nativePrimitive = callPrimitiveMethod<T>(env, javaObject, mGetValue);
+                }
+
+               
+
+                
+
+
                 static bool objectCallIntFunction(JNIEnv* env, jobject object, const std::string& functionName, const std::string& signature, int& returnValue)
                 {
                     jclass objectClass = getClassOfObject(env, object);
@@ -246,7 +290,7 @@ namespace portaible
                 static bool getElementAtIndex(JNIEnv* env, jobject container, const size_t index, jobject& returnValue)
                 {    
                     jclass objectClass = getClassOfObject(env, container);
-                    jmethodID methodID = env->GetMethodID(objectClass, "elementAt", Signatures::Function::functionSignature({"I"}, Signatures::Class::JavaObject).c_str());
+                    jmethodID methodID = env->GetMethodID(objectClass, "elementAt", "(I)Ljava/lang/Object;");
                     if(methodID == NULL)
                     {
                         return false;
@@ -254,6 +298,33 @@ namespace portaible
                     returnValue = env->CallObjectMethod(container, methodID, index);
 
                     return true;
+                }
+
+                static jobject createJavaVector(JNIEnv* env, int size)
+                {
+                    // std::string className = Signatures::Class::Vector;
+                    // jclass cls = JNIUtils::findClass(env, className.c_str());
+
+                    // if(cls == nullptr)
+                    // {
+                    //     PORTAIBLE_THROW(Exception, "Cannot create java Vector object, failed to lookup class " << className);
+                    // }
+
+                    // jmethodID constructor = env->GetMethodID(cls, "<init>", "(I)V");
+
+                    // if(constructor == nullptr)
+                    // {
+                    //     PORTAIBLE_THROW(Exception, "Cannot create java Vector object, failed to lookup constructor for class " << className);
+                    // }
+
+                    // javaObject = env->NewObject(cls, constructor, size);
+
+                    // if(javaObject == nullptr)
+                    // {
+                    //     PORTAIBLE_THROW(Exception, "Cannot create java Vector object, object with class signature " << className << " could not be created.");
+                    // }
+
+                    // return javaObject;
                 }
         };
     }

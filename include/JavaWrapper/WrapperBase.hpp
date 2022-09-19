@@ -16,6 +16,7 @@ namespace portaible
             virtual void assignInstance(JNIEnv* env, jobject javaObject) = 0;
 
             virtual void set(JNIEnv* env, jobject object, jstring jVariableName, jobject value) = 0;
+            virtual void get(JNIEnv* env, jobject object, jstring jVariableName, jobject targetObject) = 0;
         };
     }
 }

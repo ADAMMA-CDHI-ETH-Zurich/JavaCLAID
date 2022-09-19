@@ -109,6 +109,42 @@ namespace portaible
                     return env->CallBooleanMethod(object, methodID);
                 }
 
+                // ================================================================================
+
+                template<typename T>
+                static typename std::enable_if<is_integer_no_bool<T>::value, void>::type
+                setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
+                {
+                    return env->SetIntField(object, fieldID, value);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, float>::value, void>::type
+                setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
+                {
+                    env->SetFloatField(object, fieldID, value);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, double>::value, void>::type
+                setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
+                {
+                    env->SetDoubleField(object, fieldID, value);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, char>::value, void>::type
+                setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
+                {
+                    env->SetCharField(object, fieldID, value);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, bool>::value, void>::type
+                setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
+                {
+                    env->SetBooleanField(object, fieldID, value);
+                }
                 
 
             public:
@@ -183,7 +219,8 @@ namespace portaible
 
                     const jclass stringClass = env->GetObjectClass(jStr);
                     const jmethodID getBytes = env->GetMethodID(stringClass, "getBytes", "(Ljava/lang/String;)[B");
-                    const jbyteArray stringJbytes = (jbyteArray) env->CallObjectMethod(jStr, getBytes, env->NewStringUTF("UTF-8"));
+                    jstring characterSetString =  env->NewStringUTF("UTF-8");
+                    const jbyteArray stringJbytes = (jbyteArray) env->CallObjectMethod(jStr, getBytes, characterSetString);
 
                     size_t length = (size_t) env->GetArrayLength(stringJbytes);
                     jbyte* pBytes = env->GetByteArrayElements(stringJbytes, NULL);
@@ -193,6 +230,7 @@ namespace portaible
 
                     env->DeleteLocalRef(stringJbytes);
                     env->DeleteLocalRef(stringClass);
+                    env->DeleteLocalRef(characterSetString);
                     return ret;
                 }
 
@@ -200,6 +238,9 @@ namespace portaible
                 {
                     return env->NewStringUTF(nativeString.c_str());
                 }
+
+         
+
 
                 // Returns the class name of a given object of type jclass.
                 // Not, the object needs to be a Class object in Java!
@@ -267,17 +308,25 @@ namespace portaible
                     return className == "java.lang.Boolean";
                 }
 
+                static bool isJavaCharObject(JNIEnv* env, jobject data)
+                {
+                    std::string className = getNameOfClassOfObject(env, data);
+                    return className == "java.lang.Character";
+                }
+
                 static bool isJavaStringObject(JNIEnv* env, jobject data)
                 {
                     std::string className = getNameOfClassOfObject(env, data);
                     return className == "java.lang.String";
                 }
 
-                static bool isJavaCharObject(JNIEnv* env, jobject data)
+                static bool isJavaStringBuilderObject(JNIEnv* env, jobject data)
                 {
                     std::string className = getNameOfClassOfObject(env, data);
-                    return className == "java.lang.Character";
+                    return className == "java.lang.StringBuilder";
                 }
+
+                
 
                 // ================================================================================================
 
@@ -314,19 +363,47 @@ namespace portaible
                 }
 
                
+                // Modify java primitive object (mutate normally immutable object).
+                template<typename T>
+                static void assignNativePrimitiveToJavaPrimitiveObject(JNIEnv* env, T& nativePrimitive, jobject& javaObject)
+                {
+                    // Java primitive objects like Integer, Boolean, Float etc. are usually immutable.
+                    // However, from JNI, you can still change them by just adressing the corresponding value field.
+                    std::string expectedJavaPrimitiveClassName = Signatures::Class::signatureToClassName(Signatures::Primitive::getJavaClassOfPrimitiveType<T>());
 
+                    std::string className = getNameOfClassOfObject(env, javaObject);
+                    
+                    // Does java object match the primitive?
+                    if(className != expectedJavaPrimitiveClassName)
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, cannot convert native C++ primitive " << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>() << "to java object."
+                        << "Java object is of type \"" << className << "\", however an object of type \"" << expectedJavaPrimitiveClassName << "\" was expected.");
+                    }
+
+                    jclass clazz = env->GetObjectClass(javaObject);
+                    jfieldID fieldID = env->GetFieldID(clazz, "value", Signatures::Primitive::getSignatureOfPrimitiveType<T>().c_str());
+
+                    setPrimitiveField<T>(env, fieldID, javaObject, nativePrimitive);
+
+                    env->DeleteLocalRef(clazz);
+                }
                 
 
 
                 static bool objectCallIntFunction(JNIEnv* env, jobject object, const std::string& functionName, const std::string& signature, int& returnValue)
                 {
+                    Logger::printfln("objectCallIntFunction 1 %s", functionName.c_str());
                     jclass objectClass = getClassOfObject(env, object);
+                    Logger::printfln("objectCallIntFunction 2 %s", functionName.c_str());
                     jmethodID methodID = env->GetMethodID(objectClass, functionName.c_str(), signature.c_str());
+                    Logger::printfln("objectCallIntFunction 3 %s", functionName.c_str());
                     env->DeleteLocalRef(objectClass);
-                    if(methodID == NULL)
+                    if(methodID == nullptr)
                     {
+                        Logger::printfln("objectCallIntFunction 4 %s", functionName.c_str());
                         return false;
                     } 
+                        Logger::printfln("objectCallIntFunction 5 %s", functionName.c_str());
                     returnValue = env->CallIntMethod(object, methodID);
 
                     return true;

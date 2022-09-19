@@ -5,6 +5,8 @@
 #include "WrapperBase.hpp"
 #include "RunTime/RunTime.hpp"
 #include "JavaNativeSetter.hpp"
+#include "JavaNativeGetter.hpp"
+
 namespace portaible
 {
     namespace JavaWrapper
@@ -167,6 +169,15 @@ namespace portaible
                     T* data = JNIHandle::getHandle<T>(env, object);
                     JavaNativeSetter setter;
                     setter.set(env, *data, variableName, value);
+                }
+
+                void get(JNIEnv* env, jobject object, jstring jVariableName, jobject targetObject)
+                {
+                    std::string variableName = JNIUtils::toStdString(env, jVariableName);
+                    Logger::printfln("Getting %s", variableName.c_str());
+                    T* data = JNIHandle::getHandle<T>(env, object);
+                    JavaNativeGetter getter;
+                    getter.get(env, *data, variableName, targetObject);
                 }
 
         };

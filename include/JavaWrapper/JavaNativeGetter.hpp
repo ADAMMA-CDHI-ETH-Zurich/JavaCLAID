@@ -88,7 +88,7 @@ namespace portaible
 {
     namespace JavaWrapper
     {
-        class JavaNativeSetter : public Deserializer<JavaNativeSetter>
+        class JavaNativeGetter : public Deserializer<JavaNativeGetter>
         {
             private:
                 jobject valueToSet;
@@ -165,12 +165,12 @@ namespace portaible
                 {
                     if(this->targetQueue.size() == 0)
                     {
-                        PORTAIBLE_THROW(Exception, "Error in JavaNativerSetter::set. Somehow, callFloatOrDouble was called with an empty target queue. This should not happen and is definitely a bug.");
+                        PORTAIBLE_THROW(Exception, "Error in JavaNativeGetter::set. Somehow, callFloatOrDouble was called with an empty target queue. This should not happen and is definitely a bug.");
                     }                  
 
                     if(this->targetQueue.size() > 1)
                     {
-                        PORTAIBLE_THROW(Exception, "Error, failed to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function."
+                        PORTAIBLE_THROW(Exception, "Error, failed to get member variable \"" << property << "\" of Native C++ class from Java using get(...) function."
                                 << "The type of the member variable is a primitive type (float or double), however it was tried to assign a value to one of it's member variables."
                                 << "In other words, the primitive variable \"" << property << "\" does not have a member variable of name \"" << this->targetQueue[1] << "\".");
                     }
@@ -180,14 +180,15 @@ namespace portaible
 
                 void throwTypeMismatch(const char* property, std::string primitiveType, std::string expectedType)
                 {
-                     PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function, " 
+                    // Alternatively, we could also throw this in JNI..
+                    PORTAIBLE_THROW(Exception, "Error, tried to get member variable \"" << property << "\" of Native C++ class from Java using get(...) function, " 
                             << "but the passed object is not a java object of class " << expectedType
-                            << "As \"" << property << "\" is a C++ " << primitiveType << " type, it was expected that the passed java object (the value of which shall be assigned to the C++ object) is of type " 
+                            << "As \"" << property << "\" is a C++ " << primitiveType << " type, it was expected that the passed java object (the value of which shall be assigned to the Java object) is of type " 
                             << expectedType << ", however it is \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
                 }
 
                 template<typename T>
-                void setPrimitive(const char* property, T& member)
+                void getPrimitive(const char* property, T& member)
                 {
                     if(this->finished)
                         return;
@@ -199,7 +200,7 @@ namespace portaible
 
                     this->checkTargetQueueValid(property);
 
-                    JNIUtils::javaPrimitiveObjectToNativePrimitive(env, member, this->valueToSet);
+                    JNIUtils::assignNativePrimitiveToJavaPrimitiveObject(env, member, this->valueToSet);
          
 
                     if(!this->isSequence())
@@ -208,7 +209,7 @@ namespace portaible
 
             public:
                 
-                JavaNativeSetter()
+                JavaNativeGetter()
                 {
                     
                 }
@@ -216,24 +217,24 @@ namespace portaible
                 template<typename T>
                 void callFloatOrDouble(const char* property, T& member)
                 {
-                    setPrimitive(property, member);
+                    getPrimitive(property, member);
                 }   
 
                 // Also includes any variants of signed, unsigned, short, long, long long, ...
                 template<typename T>
                 void callInt(const char* property, T& member)
                 {
-                    setPrimitive(property, member);
+                    getPrimitive(property, member);
                 }
 
                 void callBool(const char* property, bool& member)
                 {
-                    setPrimitive(property, member);
+                    getPrimitive(property, member);
                 }
 
                 void callChar(const char* property, char& member)
                 {
-                    setPrimitive(property, member);
+                    getPrimitive(property, member);
                 }
 
                 void callString(const char* property, std::string& member)
@@ -248,12 +249,60 @@ namespace portaible
 
                     this->checkTargetQueueValid(property);
 
-                    if(!JNIUtils::isJavaStringObject(this->env, this->valueToSet))
+                    // CAUTION: StringBuilder object is required, as String is immutable.
+                    // In contrast to Integer, Float, Boolean, ... objects, which are also immutable,
+                    // we can not override the internal value by just setting the internal value field (see getPrimitive function),
+                    // because it is considered to be very unsafe. See the following excerpt from Java's String.java file:
+                    /*
+                    [Excerpt from String.java]:
+                        * The value is used for character storage.
+                        *
+                        * @implNote This field is trusted by the VM, and is a subject to
+                        * constant folding if String instance is constant. Overwriting this
+                        * field after construction will cause problems.
+                        *
+                        * Additionally, it is marked with {@link Stable} to trust the contents
+                        * of the array. No other facility in JDK provides this functionality (yet).
+                        * {@link Stable} is safe here, because value is never null.
+                        *
+                        @Stable
+                        private final byte[] value;
+                    */
+                    // We require a StringBuilder object, not a String object, which we can assign the native C++ string to.
+                    if(!JNIUtils::isJavaStringBuilderObject(this->env, this->valueToSet))
                     {
-                        throwTypeMismatch(property, "std::string", "java/lang/String");
+                        throwTypeMismatch(property, "std::string", "java/lang/StringBuilder");
                     }
 
-                    member = JNIUtils::toStdString(this->env, valueToSet);
+                    jclass stringBuilderClass = JNIUtils::getClassOfObject(this->env, this->valueToSet);
+                    // Clear the string
+                    jmethodID setLengthMethodID = env->GetMethodID(stringBuilderClass, "setLength", "(I)V");   
+
+                    std::string objectType = JNIUtils::getNameOfClassOfObject(this->env, this->valueToSet);
+
+                    if(setLengthMethodID == nullptr)
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, tried to get member variable \"" << property << "\" of Native C++ class from Java using get(...) function, " 
+                            << "but the passed object of type \"" << objectType << "\"does not have a function a \"setLength\", as was expected.");
+                    }
+
+                    env->CallVoidMethod(this->valueToSet, setLengthMethodID, 0);
+
+                    // Set append std::string to StringBuilder (setting the value).
+                    jmethodID appendMethodID = env->GetMethodID(stringBuilderClass, "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;");  
+
+                    if(appendMethodID == nullptr)
+                    {
+                        PORTAIBLE_THROW(Exception, "Error, tried to get member variable \"" << property << "\" of Native C++ class from Java using get(...) function, " 
+                            << "but the passed object of type \"" << objectType << "\"does not have a function a \"setLength\", as was expected.");
+                    }
+
+                    jstring tmpJString = JNIUtils::toJString(env, member);            
+                    env->CallObjectMethod(this->valueToSet, appendMethodID, tmpJString);
+                  
+                    env->DeleteLocalRef(tmpJString);
+                    env->DeleteLocalRef(stringBuilderClass);
+
                     if(!this->isSequence())
                         finished = true;
                 }
@@ -319,18 +368,23 @@ namespace portaible
                     // I.e. this->valueToSet -> does it have a function size().
                     // valueToSet needs to be of type Vector, ArrayList, Map or whatever.
 
+                    std::string javaObjectType = JNIUtils::getNameOfClassOfObject(this->env, this->valueToSet); 
+
                     if(this->isCurrentTarget(this->lastClassProperty.c_str()) && !this->finished)
                     {
                         this->checkTargetQueueValid(this->lastClassProperty.c_str());
 
                         int tmp = 0;
+                        Logger::printfln("count get 1");
                         if(!JNIUtils::objectCallIntFunction(env, this->valueToSet, "size", "()I", tmp))
                         {
-                            PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
+                            Logger::printfln("count get 2");
+                            PORTAIBLE_THROW(Exception, "Error, tried to get member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using get(...) function." 
                                 << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                                 << "As such, it was expected that the Java object has a size function to retrieve the amount of stored elements."
-                                << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
+                                << "A size() function, however, is not available for the passed Java object of type \"" << javaObjectType << "\".");
                         }
+                        Logger::printfln("count get 3");
 
                         count = tmp;
                     }
@@ -349,7 +403,7 @@ namespace portaible
                     int tmp = 0;
                     if(!JNIUtils::objectCallIntFunction(env, this->valueToSet, "size", "()I", tmp))
                     {
-                        PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
+                        PORTAIBLE_THROW(Exception, "Error, tried to get member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using get(...) function." 
                             << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                             << "As such, it was expected that the Java object has a size function to retrieve the amount of stored elements."
                             << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
@@ -369,7 +423,7 @@ namespace portaible
                     jobject container = sequenceObjectsStack.top();
                     if(!JNIUtils::objectCallIntFunction(env, container, "size", "()I", size))
                     {
-                        PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
+                        PORTAIBLE_THROW(Exception, "Error, tried to get member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using get(...) function." 
                             << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                             << "As such, it was expected that the Java object has a size function to retrieve the amount of stored elements."
                             << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
@@ -378,7 +432,7 @@ namespace portaible
 
                     if(i >= size)
                     {
-                        PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
+                        PORTAIBLE_THROW(Exception, "Error, tried to get member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using get(...) function." 
                             << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                             << "The provided Java object is a collection as wel, however it does not contain enough elements to fill the Native C++ container (C++: " << i + 1<< " vs. Java: " << size << ").");                    
                     }
@@ -386,7 +440,7 @@ namespace portaible
 
                     if(!JNIUtils::getElementAtIndex(this->env, container, i, this->valueToSet))
                     {
-                        PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
+                        PORTAIBLE_THROW(Exception, "Error, tried to get member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using get(...) function." 
                                 << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                                 << "As such, it was expected that the Java object has a \"elementAt()\" to retrieve an Element by index."
                                 << "This function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
@@ -410,18 +464,14 @@ namespace portaible
 
                 void enforceName(std::string& name, int idInSequence = 0)
                 {
-                    // Some serializers, like JavaNativeSetter, might not store the members name (i.e., property parameters),
-                    // as it is not necessary to be known in the binary data).
-                    // For some cases, however, it might be necessary to store such strings in the serialized data nevertheless,
-                    // as it might be needed for deserialization etc.
-                    // Thus, this function allows to make sure the string "name" is explicitly stored.
+
                     
 
                 }
 
                 template<typename NativeType>
-                void set(JNIEnv* env, NativeType& nativeObject, const std::string& targetVariable, jobject value)
-                {
+                void get(JNIEnv* env, NativeType& nativeObject, const std::string& targetVariable, jobject value)
+                {          
                     this->originalTargetVariable = targetVariable;
                     splitToTargets(targetVariable, this->targetQueue);
 
@@ -440,9 +490,6 @@ namespace portaible
                         << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<NativeType>() << "\" from Java, however a reflected member variable with name "
                         << "\"" << targetVariable << "\" was not found. Please make sure the variable was included in the reflect function of the mentioned class.");
                     }
-
-                    
-
                 }
 
         };

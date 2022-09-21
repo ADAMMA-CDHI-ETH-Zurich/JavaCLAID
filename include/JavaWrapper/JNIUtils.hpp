@@ -193,13 +193,19 @@ namespace portaible
                         "was called in JNI_OnLoad in native code.");
                     }
 
-                    std::string className;
 
 
                     jstring str = env->NewStringUTF(name);
                     jclass cls = static_cast<jclass>(env->CallObjectMethod(gClassLoader, gFindClassMethod, str));
                 
                     env->DeleteLocalRef(str);
+
+                    if(cls == nullptr)
+                    {
+                        // If failed, try conventional method.
+                        env->ExceptionClear();
+                        cls = env->FindClass(name);
+                    }
                     
                     // Save class for later use, so we do not always need to query it again.
                     // Also, might save space in the local reference table.
@@ -409,6 +415,24 @@ namespace portaible
                     return true;
                 }
 
+                template<typename... Args>
+                static bool objectCallVoidFunction(JNIEnv* env, jobject object, const std::string& functionName, const std::string& signature, Args... args)
+                {
+                    Logger::printfln("Call void function %s 1", functionName.c_str());
+                    jclass objectClass = getClassOfObject(env, object);
+                    jmethodID methodID = env->GetMethodID(objectClass, functionName.c_str(), signature.c_str());
+                    Logger::printfln("Call void function %s 2", functionName.c_str());
+                    env->DeleteLocalRef(objectClass);
+                    if(methodID == nullptr)
+                    {
+                        return false;
+                    } 
+                    Logger::printfln("Call void function %s 3 %d", functionName.c_str(), args...);
+                    env->CallVoidMethod(object, methodID, args...);
+                    Logger::printfln("Call void function %s 4", functionName.c_str());
+                    return true;
+                }
+
                 static bool getElementAtIndex(JNIEnv* env, jobject container, const size_t index, jobject& returnValue)
                 {    
                     jclass objectClass = getClassOfObject(env, container);
@@ -420,6 +444,22 @@ namespace portaible
                         return false;
                     } 
                     returnValue = env->CallObjectMethod(container, methodID, index);
+
+
+                    return true;
+                }
+
+                static bool setElementAtIndex(JNIEnv* env, jobject container, const size_t index, jobject& value)
+                {    
+                    jclass objectClass = getClassOfObject(env, container);
+                    jmethodID methodID = env->GetMethodID(objectClass, "setElementAt", "(Ljava/lang/Object;I)V");
+                    env->DeleteLocalRef(objectClass);
+                    
+                    if(methodID == NULL)
+                    {
+                        return false;
+                    } 
+                    env->CallVoidMethod(container, methodID, value, index);
 
 
                     return true;

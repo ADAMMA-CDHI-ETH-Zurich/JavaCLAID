@@ -22,6 +22,19 @@ jstring strObj = (jstring)env->CallObjectMethod(dataType, mid_getName); // Call 
 
 
 
+Functions called from Java into C++ do not need to free objects they created.
+However, callback functions from C++ into Java (e.g. Channel subscribe callbacks), need to clean up every created object (DeleteLocalRef) manually.
+See the following:
 
-Every function that returns an object (jobject, jclass, jstring, ....) creates a local reference, that NEEDS to be deleted manually using
-env->DeleteLocalRef. This does not necessarily delete the object, just the reference. It's like as if on the C++ side, new was called, which needs to be deleted later.
+    (a) If you are constructing an object to return to the Java code obviously you don't want to free it yourself.
+
+    (b) Anything you construct inside a JNI method apart from the return value and anything reachable from it can be released by the JVM when the JNI method returns.
+
+    (c) You can use DeleteLocalRef() or Push/PopLocalFrame() to manage objects you create yourself if you like, but unless you do large amounts of object creation, or **you have callbacks into Java code**, it's not really necessary.
+
+    (d) All this also applies to references that you acquire via JNI calls (e.g. jclass references).
+
+    (e) Another thing often overlooked is that the result of GetStringChars() or GetStringUTFChars() also needs to be released, with ReleaseStringChars() or ReleaseStringUTFChars().
+    Share on Twitter
+
+

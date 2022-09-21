@@ -34,7 +34,7 @@ extern "C"
         wrapper->set(env, object, variableName, value);
     }
 
-    JNIEXPORT void JNICALL Java_com_example_portaible_Wrapper_get(JNIEnv* env, jobject object, jstring variableName, jobject targetObject)
+    JNIEXPORT jobject JNICALL Java_com_example_portaible_Wrapper_get(JNIEnv* env, jobject object, jstring variableName)
     {
         std::string className = JNIUtils::getNameOfClassOfObject(env, object);
         if(!WrapperMaster::getInstance()->isWrapperRegisteredForClass(className))
@@ -44,7 +44,11 @@ extern "C"
 
         WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapper(className);
 
-        wrapper->get(env, object, variableName, targetObject);
+        jobject objectReference = wrapper->get(env, object, variableName);
+        return objectReference;
+
+        // Destructor of jobject should automatically release our local reference to the jobject.
+        // i.e., env->DeleteLocalRef() should get called.
     }
 
     // // Native class = cpp class

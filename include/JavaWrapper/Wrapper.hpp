@@ -6,7 +6,7 @@
 #include "RunTime/RunTime.hpp"
 #include "JavaNativeSetter.hpp"
 #include "JavaNativeGetter.hpp"
-
+#include "JNIFactoryBase.hpp"
 namespace portaible
 {
     namespace JavaWrapper
@@ -22,34 +22,7 @@ namespace portaible
                     return reinterpret_cast<intptr_t>(this);
                 }
 
-                void newJavaObjectFromClassSignature(JNIEnv* env, std::string className, jobject& channelObject)
-                {
-                    // Why use custom findClass?
-                    // See https://stackoverflow.com/questions/13263340/findclass-from-any-thread-in-android-jni/16302771#16302771
-
-                    jclass cls = JNIUtils::findClass(env, className.c_str());
-
-                    if(cls == nullptr)
-                    {
-                        PORTAIBLE_THROW(Exception, "Cannot create java object, failed to lookup class " << className);
-                    }
-
-                    jmethodID constructor = env->GetMethodID(cls, "<init>", "()V");
-
-                    if(constructor == nullptr)
-                    {
-                        PORTAIBLE_THROW(Exception, "Cannot create java object, failed to lookup constructor for class " << className);
-                    }
-
-                    channelObject = env->NewObject(cls, constructor);
-
-                    if(channelObject == nullptr)
-                    {
-                        PORTAIBLE_THROW(Exception, "Cannot create java object, object with class signature " << className << " could not be created.");
-                    }
-
-                    env->DeleteLocalRef(cls);
-                }
+                
 
                 void spawnJavaChannelDataObjectFromData(JNIEnv* env, jobject data, jobject& channelDataObject)
                 {
@@ -80,7 +53,7 @@ namespace portaible
                 jobject channelObjectToJavaChannelObject(JNIEnv* env, Channel<T>* channel)
                 {
                     jobject channelObject;
-                    newJavaObjectFromClassSignature(env, std::string(Signatures::Class::Channel), channelObject);
+                    JNIFactoryBase::newJavaObjectFromClassSignature(env, std::string(Signatures::Class::Channel), channelObject, "");
 
                     JNIHandle::setHandle(env, channelObject, channel);
                     return channelObject;
@@ -149,7 +122,7 @@ namespace portaible
 
                     jobject javaDataObject;
                     // Reminder: javaClassName is the class name of the associated java class that this wrapper is responsible for.
-                    newJavaObjectFromClassSignature(env, Signatures::Class::classNameToSignature(this->javaClassName), javaDataObject);
+                    JNIFactoryBase::newJavaObjectFromClassSignature(env, Signatures::Class::classNameToSignature(this->javaClassName), javaDataObject, "");
                     JNIHandle::setHandle(env, javaDataObject, copiedData);
 
                     // Now we have the data object.. and need to store it in the Java ChannelDataObject.
@@ -171,13 +144,13 @@ namespace portaible
                     setter.set(env, *data, variableName, value);
                 }
 
-                void get(JNIEnv* env, jobject object, jstring jVariableName, jobject targetObject)
+                jobject get(JNIEnv* env, jobject object, jstring jVariableName)
                 {
                     std::string variableName = JNIUtils::toStdString(env, jVariableName);
                     Logger::printfln("Getting %s", variableName.c_str());
                     T* data = JNIHandle::getHandle<T>(env, object);
                     JavaNativeGetter getter;
-                    getter.get(env, *data, variableName, targetObject);
+                    return getter.get(env, *data, variableName);
                 }
 
         };

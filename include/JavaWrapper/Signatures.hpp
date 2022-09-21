@@ -6,7 +6,9 @@
 
 #include "Utilities/StringUtils.hpp"
 #include "Traits/is_integer_no_bool.hpp"
-
+#ifndef byte
+    #include "Utilities/byte.hpp"
+#endif
 namespace portaible
 {
     namespace JavaWrapper
@@ -45,49 +47,95 @@ namespace portaible
             namespace Primitive
             {
                 template<typename T>
-                static typename std::enable_if<is_integer_no_bool<T>::value, std::string>::type
-                getJavaClassOfPrimitiveType()
+                static typename std::enable_if<std::is_same<T, byte>::value, std::string>::type
+                getJavaClassNameOfPrimitiveType()
+                {
+                    return "java/lang/Byte";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int16_t>::value || std::is_same<T, uint16_t>::value, std::string>::type
+                getJavaClassNameOfPrimitiveType()
+                {
+                    return "java/lang/Short";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int32_t>::value || std::is_same<T, uint32_t>::value, std::string>::type
+                getJavaClassNameOfPrimitiveType()
                 {
                     return "java/lang/Integer";
                 }
 
                 template<typename T>
+                static typename std::enable_if<std::is_same<T, int64_t>::value || std::is_same<T, uint64_t>::value, std::string>::type
+                getJavaClassNameOfPrimitiveType()
+                {
+                    // Yes, it's "J", because "L" is used for clases.
+                    return "java/lang/Long";
+                }
+
+                template<typename T>
                 static typename std::enable_if<std::is_same<T, float>::value, std::string>::type
-                getJavaClassOfPrimitiveType()
+                getJavaClassNameOfPrimitiveType()
                 {
                     return "java/lang/Float";
                 }
 
                 template<typename T>
                 static typename std::enable_if<std::is_same<T, double>::value, std::string>::type
-                getJavaClassOfPrimitiveType()
+                getJavaClassNameOfPrimitiveType()
                 {
                     return "java/lang/Double";
                 }
 
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, char>::value, std::string>::type
-                getJavaClassOfPrimitiveType()
+                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, std::string>::type
+                getJavaClassNameOfPrimitiveType()
                 {
                     return "java/lang/Character";
                 }
 
                 template<typename T>
                 static typename std::enable_if<std::is_same<T, bool>::value, std::string>::type
-                getJavaClassOfPrimitiveType()
+                getJavaClassNameOfPrimitiveType()
                 {
                     return "java/lang/Boolean";
                 }
 
                 // =====================================================================
 
+                // Why not use int8_t? Because int8_t might be defined as signed char, depending on the compiler
+                // See: https://stackoverflow.com/questions/16503373/difference-between-char-and-signed-char-in-c
                 template<typename T>
-                typename std::enable_if<is_integer_no_bool<T>::value, std::string>::type
+                static typename std::enable_if<std::is_same<T, byte>::value, std::string>::type
+                getSignatureOfPrimitiveType()
+                {
+                    return "B";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int16_t>::value || std::is_same<T, uint16_t>::value, std::string>::type
+                getSignatureOfPrimitiveType()
+                {
+                    return "S";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int32_t>::value || std::is_same<T, uint32_t>::value, std::string>::type
                 getSignatureOfPrimitiveType()
                 {
                     return "I";
                 }
 
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int64_t>::value || std::is_same<T, uint64_t>::value, std::string>::type
+                getSignatureOfPrimitiveType()
+                {
+                    // Yes, it's "J", because "L" is used for clases.
+                    return "J";
+                }
+                
                 template<typename T>
                 typename std::enable_if<std::is_same<T, float>::value, std::string>::type
                 getSignatureOfPrimitiveType()
@@ -103,7 +151,7 @@ namespace portaible
                 }
 
                 template<typename T>
-                typename std::enable_if<std::is_same<T, char>::value, std::string>::type
+                typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, std::string>::type
                 getSignatureOfPrimitiveType()
                 {
                     return "C";
@@ -113,7 +161,7 @@ namespace portaible
                 typename std::enable_if<std::is_same<T, bool>::value, std::string>::type
                 getSignatureOfPrimitiveType()
                 {
-                    return "B";
+                    return "Z";
                 }
 
                 

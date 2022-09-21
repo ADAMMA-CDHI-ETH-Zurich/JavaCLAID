@@ -32,18 +32,19 @@ namespace portaible
             }
         }; 
 
-        // For primitive / arithmetic types
+        // For primitive / arithmetic types and byte
         template<typename T>
-        struct JNIFactory<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> : protected JNIFactoryBase
+        struct JNIFactory<T, typename std::enable_if<std::is_arithmetic<T>::value || std::is_same<T, byte>::value>::type> : protected JNIFactoryBase
         {
             protected:
                 static jobject createJavaPrimitiveObjectFromNativePrimitive(JNIEnv* env, T& nativePrimitive)
                 {
                     // Java primitive objects like Integer, Boolean, Float etc. are usually immutable.
                     // However, from JNI, you can still change them by just adressing the corresponding value field.
-                    std::string primitiveClassName = Signatures::Class::signatureToClassName(Signatures::Primitive::getJavaClassOfPrimitiveType<T>());
+                    std::string primitiveClassName =  Signatures::Primitive::getJavaClassNameOfPrimitiveType<T>();
                     jobject javaObject;
-
+                    std::string signature = Signatures::Primitive::getSignatureOfPrimitiveType<T>();
+                    Logger::printfln("Signature %s\n", signature.c_str());
                     newJavaObjectFromClassSignature(env, primitiveClassName, javaObject, Signatures::Primitive::getSignatureOfPrimitiveType<T>(), nativePrimitive);
                     return javaObject;
                 }

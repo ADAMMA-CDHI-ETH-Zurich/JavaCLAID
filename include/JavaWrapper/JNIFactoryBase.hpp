@@ -27,7 +27,7 @@ namespace portaible
                 }
 
                 std::string constructorSignature = std::string("(") + constructerParameters + std::string(")V");
-                jmethodID constructor = env->GetMethodID(cls, "<init>", "()V");
+                jmethodID constructor = env->GetMethodID(cls, "<init>", constructorSignature.c_str());
 
                 if(constructor == nullptr)
                 {

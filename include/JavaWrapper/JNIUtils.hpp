@@ -8,8 +8,9 @@
 #include "JNIHandle.hpp"
 #include "Exception/Exception.hpp"
 #include "TypeChecking/TypeCheckingFunctions.hpp"
-
-
+#ifndef byte
+    #include "Utilities/byte.hpp"
+#endif
 
 namespace portaible
 {
@@ -38,10 +39,31 @@ namespace portaible
                 }
 
                 template<typename T>
-                static typename std::enable_if<is_integer_no_bool<T>::value, std::string>::type
+                static typename std::enable_if<std::is_same<T, byte>::value, std::string>::type
+                getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
+                {
+                    return "byteValue";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int16_t>::value || std::is_same<T, uint16_t>::value, std::string>::type
+                getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
+                {
+                    return "shortValue";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int32_t>::value || std::is_same<T, uint32_t>::value, std::string>::type
                 getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
                 {
                     return "intValue";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int64_t>::value || std::is_same<T, uint64_t>::value, std::string>::type
+                getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
+                {
+                    return "longValue";
                 }
 
                 template<typename T>
@@ -59,7 +81,7 @@ namespace portaible
                 }
 
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, char>::value, std::string>::type
+                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, std::string>::type
                 getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
                 {
                     return "charValue";
@@ -74,11 +96,39 @@ namespace portaible
 
                 // ================================================================================
 
+                // Why not use int8_t? Because int8_t might be defined as signed char, depending on the compiler
                 template<typename T>
-                static typename std::enable_if<is_integer_no_bool<T>::value, T>::type
+                static typename std::enable_if<std::is_same<T, byte>::value, T>::type
+                callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
+                {
+                    // Force conversion to byte.
+                    // byte is defined as "enum class : signed char".
+                    // jbyte is defined as typedef signed char jbyte aswell.
+                    // Thus, we can force the cast by reinterpreting the memory address, even though the compiler would complain.
+                    jbyte jByte = env->CallByteMethod(object, methodID);
+                
+                    return *reinterpret_cast<byte*>(&jByte);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int16_t>::value || std::is_same<T, uint16_t>::value, T>::type
+                callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
+                {
+                    return env->CallShortMethod(object, methodID);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int32_t>::value || std::is_same<T, uint32_t>::value, T>::type
                 callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
                 {
                     return env->CallIntMethod(object, methodID);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int64_t>::value || std::is_same<T, uint64_t>::value, T>::type
+                callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
+                {
+                    return env->CallLongMethod(object, methodID);
                 }
 
                 template<typename T>
@@ -95,8 +145,10 @@ namespace portaible
                     return env->CallDoubleMethod(object, methodID);
                 }
 
+                // Why distinguish both? See: https://stackoverflow.com/questions/16503373/difference-between-char-and-signed-char-in-c
+                // The c++ standard does not define whether "char" is "signed char" or "unsigned char".s
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, char>::value, T>::type
+                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, T>::type
                 callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
                 {
                     return env->CallCharMethod(object, methodID);
@@ -111,11 +163,34 @@ namespace portaible
 
                 // ================================================================================
 
+                // Why not use int8_t? Because int8_t might be defined as signed char, depending on the compiler
+                // See: https://stackoverflow.com/questions/16503373/difference-between-char-and-signed-char-in-c
                 template<typename T>
-                static typename std::enable_if<is_integer_no_bool<T>::value, void>::type
+                static typename std::enable_if<std::is_same<T, byte>::value>::type
                 setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
                 {
-                    return env->SetIntField(object, fieldID, value);
+                    env->SetFloatField(object, fieldID, value);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int16_t>::value || std::is_same<T, uint16_t>::value, T>::type
+                setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
+                {
+                    env->SetFloatField(object, fieldID, value);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int32_t>::value || std::is_same<T, uint32_t>::value, T>::type
+                setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
+                {
+                    env->SetFloatField(object, fieldID, value);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, int64_t>::value || std::is_same<T, uint64_t>::value, T>::type
+                setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
+                {
+                    env->SetFloatField(object, fieldID, value);
                 }
 
                 template<typename T>
@@ -133,7 +208,7 @@ namespace portaible
                 }
 
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, char>::value, void>::type
+                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, T>::type
                 setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
                 {
                     env->SetCharField(object, fieldID, value);
@@ -290,10 +365,28 @@ namespace portaible
 
                 // ============================================================
 
+                static bool isJavaByteObject(JNIEnv* env, jobject data)
+                {
+                    std::string className = getNameOfClassOfObject(env, data);
+                    return className == "java.lang.Byte";
+                }
+
+                static bool isJavaShortObject(JNIEnv* env, jobject data)
+                {
+                    std::string className = getNameOfClassOfObject(env, data);
+                    return className == "java.lang.Short";
+                }
+
                 static bool isJavaIntegerObject(JNIEnv* env, jobject data)
                 {
                     std::string className = getNameOfClassOfObject(env, data);
                     return className == "java.lang.Integer";
+                }
+
+                static bool isJavaLongObject(JNIEnv* env, jobject data)
+                {
+                    std::string className = getNameOfClassOfObject(env, data);
+                    return className == "java.lang.Long";
                 }
 
                 static bool isJavaFloatObject(JNIEnv* env, jobject data)
@@ -340,7 +433,7 @@ namespace portaible
                 template<typename T>
                 static void javaPrimitiveObjectToNativePrimitive(JNIEnv* env, T& nativePrimitive, jobject& javaObject)
                 {
-                    std::string expectedJavaPrimitiveClassName = Signatures::Class::signatureToClassName(Signatures::Primitive::getJavaClassOfPrimitiveType<T>());
+                    std::string expectedJavaPrimitiveClassName = Signatures::Class::signatureToClassName(Signatures::Primitive::getJavaClassNameOfPrimitiveType<T>());
 
                     std::string className = getNameOfClassOfObject(env, javaObject);
                     
@@ -375,7 +468,7 @@ namespace portaible
                 {
                     // Java primitive objects like Integer, Boolean, Float etc. are usually immutable.
                     // However, from JNI, you can still change them by just adressing the corresponding value field.
-                    std::string expectedJavaPrimitiveClassName = Signatures::Class::signatureToClassName(Signatures::Primitive::getJavaClassOfPrimitiveType<T>());
+                    std::string expectedJavaPrimitiveClassName = Signatures::Class::signatureToClassName(Signatures::Primitive::getJavaClassNameOfPrimitiveType<T>());
 
                     std::string className = getNameOfClassOfObject(env, javaObject);
                     

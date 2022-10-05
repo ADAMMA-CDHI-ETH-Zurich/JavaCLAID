@@ -77,7 +77,7 @@ public class MyStruct extends Wrapper<MyStruct>
 #include "JNIUtils.hpp"
 #include "ClassFactory/ClassFactory.hpp"
 
-#include "Reflection/Serializer.hpp"
+#include "Serialization/Serializer.hpp"
 #include "TypeChecking/TypeCheckingFunctions.hpp"
 #include "PolymorphicReflector/PolymorphicReflector.hpp"
 #include "Traits/is_specialization_of.hpp"
@@ -437,7 +437,7 @@ namespace portaible
                 
                 void write(const char* data, size_t size)
                 {
-
+                    PORTAIBLE_THROW(Exception, "Error, JavaNativeGetter::read called. Function not implemented!");
                 }
 
                 void enforceName(std::string& name, int idInSequence = 0)

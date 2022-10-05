@@ -12,16 +12,23 @@ namespace portaible
         // std::vector -> java.lang.ArrayList
 
         
+        template<typename Type>
+            struct ____INVALID_TYPE_IN_JNI_FACTORY_TYPE_{
+            static_assert(sizeof(Type)==0,
+                "The Type (see above) is not supported for to spawn via JNIFactory.");
+            static void invoke() {}
+        };
 
         // For any other class / Default case
         template<typename T, class Enable = void>
         struct JNIFactory : protected JNIFactoryBase
         {
             // default case
-            static jobject spawn(JNIEnv* env, T& member) 
+            static jobject spawn(JNIEnv* env) 
             {
                 PORTAIBLE_THROW(Exception, "Error, cannot convert Native C++ class " << TypeChecking::getCompilerIndependentTypeNameOfClass<T>() << " to java object."
                     << "We do not know how to do the conversion (which Java object corresponds to this type?).");
+                //____INVALID_TYPE_IN_JNI_FACTORY_TYPE_<T>::invoke();
             }
 
             // default case
@@ -29,12 +36,13 @@ namespace portaible
             {
                 PORTAIBLE_THROW(Exception, "Error, cannot convert Native C++ class " << TypeChecking::getCompilerIndependentTypeNameOfClass<T>() << " to java object."
                     << "We do not know how to do the conversion (which Java object corresponds to this type?).");
+                //____INVALID_TYPE_IN_JNI_FACTORY_TYPE_<T>::invoke();
             }
         }; 
 
         // For primitive / arithmetic types and byte
         template<typename T>
-        struct JNIFactory<T, typename std::enable_if<std::is_arithmetic<T>::value || std::is_same<T, byte>::value>::type> : protected JNIFactoryBase
+        struct JNIFactory<T, typename std::enable_if<std::is_arithmetic<T>::value || std::is_same<T, CLAID::byte>::value>::type> : protected JNIFactoryBase
         {
             protected:
                 static jobject createJavaPrimitiveObjectFromNativePrimitive(JNIEnv* env, T& nativePrimitive)

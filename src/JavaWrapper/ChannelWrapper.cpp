@@ -24,12 +24,12 @@ extern "C"
         // is ensured at compile time.
     
         std::string className = JNIUtils::getNameOfClassOfObject(env, data);
-        if(!WrapperMaster::getInstance()->isWrapperRegisteredForClass(className))
+        if(!WrapperMaster::getInstance()->isWrapperAssignedToJavaClass(className))
         {
             PORTAIBLE_THROW(Exception, "Error, post was called for an object of java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
         }
 
-        WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapper(className);
+        WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapperForJavaClass(className);
         wrapper->post(env, wrappedChannel, data);
     }
 }

@@ -77,7 +77,7 @@ public class MyStruct extends Wrapper<MyStruct>
 #include "JNIUtils.hpp"
 #include "ClassFactory/ClassFactory.hpp"
 
-#include "Reflection/Serializer.hpp"
+#include "Serialization/Serializer.hpp"
 #include "TypeChecking/TypeCheckingFunctions.hpp"
 #include "PolymorphicReflector/PolymorphicReflector.hpp"
 #include "Traits/is_specialization_of.hpp"
@@ -417,8 +417,11 @@ namespace portaible
                     // For some cases, however, it might be necessary to store such strings in the serialized data nevertheless,
                     // as it might be needed for deserialization etc.
                     // Thus, this function allows to make sure the string "name" is explicitly stored.
-                    
+                }
 
+                void read(char*& data, size_t size)
+                {
+                    PORTAIBLE_THROW(Exception, "Error, JavaNativeSetter::read called. Function not implemented!");
                 }
 
                 template<typename NativeType>

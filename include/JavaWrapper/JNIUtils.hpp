@@ -8,9 +8,8 @@
 #include "JNIHandle.hpp"
 #include "Exception/Exception.hpp"
 #include "TypeChecking/TypeCheckingFunctions.hpp"
-#ifndef byte
-    #include "Utilities/byte.hpp"
-#endif
+#include "Utilities/byte.hpp"
+
 
 namespace portaible
 {
@@ -39,7 +38,7 @@ namespace portaible
                 }
 
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, byte>::value, std::string>::type
+                static typename std::enable_if<std::is_same<T, CLAID::byte>::value, std::string>::type
                 getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
                 {
                     return "byteValue";
@@ -98,7 +97,7 @@ namespace portaible
 
                 // Why not use int8_t? Because int8_t might be defined as signed char, depending on the compiler
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, byte>::value, T>::type
+                static typename std::enable_if<std::is_same<T, CLAID::byte>::value, T>::type
                 callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
                 {
                     // Force conversion to byte.
@@ -107,7 +106,7 @@ namespace portaible
                     // Thus, we can force the cast by reinterpreting the memory address, even though the compiler would complain.
                     jbyte jByte = env->CallByteMethod(object, methodID);
                 
-                    return *reinterpret_cast<byte*>(&jByte);
+                    return *reinterpret_cast<CLAID::byte*>(&jByte);
                 }
 
                 template<typename T>
@@ -166,7 +165,7 @@ namespace portaible
                 // Why not use int8_t? Because int8_t might be defined as signed char, depending on the compiler
                 // See: https://stackoverflow.com/questions/16503373/difference-between-char-and-signed-char-in-c
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, byte>::value>::type
+                static typename std::enable_if<std::is_same<T, CLAID::byte>::value>::type
                 setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
                 {
                     env->SetFloatField(object, fieldID, value);

@@ -1,8 +1,11 @@
 #include "JavaWrapper/WrapperMaster.hpp"
+// #include "JavaWrapper/Wrapper.hpp"
 #include "Audio/AudioData.hpp"
 
-LAZY_WRAPPER("com.example.portaible.AudioData", AudioData)
+// template<typename T>
+// portaible::JavaWrapper::Wrapper<portaible::AudioData>;
 
+LAZY_WRAPPER("com.example.portaible.AudioData", portaible::AudioData, AudioData)
 
 // Alternative:
 /*
@@ -18,28 +21,28 @@ namespace portaible
     };
 }
 
-REGISTER_WRAPPER("com.example.portaible.AudioData", portaible::AudioData, AudioDataWrapper)
+REGISTER_JAVA_WRAPPER("com.example.portaible.AudioData", portaible::AudioData, AudioDataWrapper)
 
 */
-
+using namespace portaible;
 extern "C"
 {
     JNIEXPORT void Java_com_example_portaible_AudioData_set
       (JNIEnv* env, jobject thiz, jbyteArray data)
     {
-        // AudioData* audioData = JNIHandle::getHandle<AudioData>(env, thiz);
-        // jbyte* bufferPtr = env->GetByteArrayElements(data, NULL);
-        // jsize lengthOfArray = env->GetArrayLength(data);
+        AudioData* audioData = JavaWrapper::JNIHandle::getHandle<AudioData>(env, thiz);
+        jbyte* bufferPtr = env->GetByteArrayElements(data, NULL);
+        jsize lengthOfArray = env->GetArrayLength(data);
         
-        // audioData->data.resize(lengthOfArray);
+        audioData->data.resize(lengthOfArray);
         
-        // Logger::printfln("Copying %d bytes of data to audio data", lengthOfArray);
-        // for(size_t i = 0; i < lengthOfArray; i++)
-        // {
-        //     audioData->data[i] = bufferPtr[i];
-        // }
+        Logger::printfln("Copying %d bytes of data to audio data", lengthOfArray);
+        for(size_t i = 0; i < lengthOfArray; i++)
+        {
+            audioData->data[i] = *reinterpret_cast<CLAID::byte*>(&(bufferPtr[i]));
+        }
 
-        // env->ReleaseByteArrayElements(data, bufferPtr, 0);
+        env->ReleaseByteArrayElements(data, bufferPtr, 0);
 
     }
 

@@ -12,6 +12,7 @@ namespace portaible
 
             public:
                 JavaModule(JNIEnv* env, jobject javaObject);
+                JavaModule(JavaVM* javaVM, jobject javaObject);
 
                 template<typename Reflector>
                 void reflect(Reflector& r)

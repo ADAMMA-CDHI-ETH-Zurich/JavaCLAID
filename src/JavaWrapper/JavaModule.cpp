@@ -16,7 +16,11 @@ namespace portaible
             this->javaObject = env->NewGlobalRef(javaObject);
         }
 
-       
+        JavaModule::JavaModule(JavaVM* javaVM, jobject javaObject)
+        {
+            this->javaVM = javaVM;
+            this->javaObject = javaObject;
+        }
 
         void JavaModule::initialize()
         {
@@ -48,12 +52,12 @@ namespace portaible
         jobject JavaModule::publish(JNIEnv* env, jclass dataType, jstring channelID)
         {
             std::string className = JNIUtils::getClassName(env, dataType);
-            if(!WrapperMaster::getInstance()->isWrapperRegisteredForClass(className))
+            if(!WrapperMaster::getInstance()->isWrapperAssignedToJavaClass(className))
             {
                 PORTAIBLE_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
             }
 
-            WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapper(className);
+            WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapperForJavaClass(className);
             jobject channel = wrapper->publish(env, this, channelID);
 
             return channel;
@@ -62,12 +66,12 @@ namespace portaible
         jobject JavaModule::subscribe(JNIEnv* env, jclass dataType, jstring channelID, jstring functionCallbackName, jstring functionSignature)
         {
             std::string className = JNIUtils::getClassName(env, dataType);
-            if(!WrapperMaster::getInstance()->isWrapperRegisteredForClass(className))
+            if(!WrapperMaster::getInstance()->isWrapperAssignedToJavaClass(className))
             {
                 PORTAIBLE_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
             }
 
-            WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapper(className);
+            WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapperForJavaClass(className);
             jobject channel = wrapper->subscribe(env, this, channelID, functionCallbackName, functionSignature);
 
             return channel;

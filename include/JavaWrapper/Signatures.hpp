@@ -6,9 +6,7 @@
 
 #include "Utilities/StringUtils.hpp"
 #include "Traits/is_integer_no_bool.hpp"
-#ifndef byte
-    #include "Utilities/byte.hpp"
-#endif
+#include "Utilities/byte.hpp"
 namespace portaible
 {
     namespace JavaWrapper
@@ -47,7 +45,7 @@ namespace portaible
             namespace Primitive
             {
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, byte>::value, std::string>::type
+                static typename std::enable_if<std::is_same<T, CLAID::byte>::value, std::string>::type
                 getJavaClassNameOfPrimitiveType()
                 {
                     return "java/lang/Byte";
@@ -108,7 +106,7 @@ namespace portaible
                 // Why not use int8_t? Because int8_t might be defined as signed char, depending on the compiler
                 // See: https://stackoverflow.com/questions/16503373/difference-between-char-and-signed-char-in-c
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, byte>::value, std::string>::type
+                static typename std::enable_if<std::is_same<T, CLAID::byte>::value, std::string>::type
                 getSignatureOfPrimitiveType()
                 {
                     return "B";

@@ -5,7 +5,7 @@
 #include "JNIFactoryBase.hpp"
 #include "JavaModule.hpp"
 
-namespace portaible
+namespace claid
 {
 	using namespace ModuleFactory;
 	namespace JavaWrapper

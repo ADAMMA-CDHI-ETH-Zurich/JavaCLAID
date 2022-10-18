@@ -6,8 +6,8 @@
 #include "JavaWrapper/JNIUtils.hpp"
 #include "Logger/Logger.hpp"
 
-using namespace portaible;
-using namespace portaible::JavaWrapper;
+using namespace claid;
+using namespace claid::JavaWrapper;
 
 
 extern "C"

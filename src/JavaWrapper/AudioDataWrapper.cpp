@@ -3,17 +3,17 @@
 #include "Audio/AudioData.hpp"
 
 // template<typename T>
-// portaible::JavaWrapper::Wrapper<portaible::AudioData>;
+// claid::JavaWrapper::Wrapper<claid::AudioData>;
 
-LAZY_WRAPPER("com.example.portaible.AudioData", portaible::AudioData, AudioData)
+LAZY_WRAPPER("com.example.portaible.AudioData", claid::AudioData, AudioData)
 
 // Alternative:
 /*
 
-using namespace portaible;
-using namespace portaible::JavaWrapper;
+using namespace claid;
+using namespace claid::JavaWrapper;
 
-namespace portaible
+namespace claid
 {
     class AudioDataWrapper : public Wrapper<AudioData>
     {
@@ -21,10 +21,10 @@ namespace portaible
     };
 }
 
-REGISTER_JAVA_WRAPPER("com.example.portaible.AudioData", portaible::AudioData, AudioDataWrapper)
+REGISTER_JAVA_WRAPPER("com.example.portaible.AudioData", claid::AudioData, AudioDataWrapper)
 
 */
-using namespace portaible;
+using namespace claid;
 extern "C"
 {
     JNIEXPORT void Java_com_example_portaible_AudioData_set

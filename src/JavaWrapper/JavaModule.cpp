@@ -2,7 +2,7 @@
 #include "JavaWrapper/WrapperMaster.hpp"
 
 
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {
@@ -85,7 +85,7 @@ namespace portaible
             
             if(mid == nullptr)
             {
-                portaible::Logger::printfln("NULL");
+                claid::Logger::printfln("NULL");
                 PORTAIBLE_THROW(Exception, "Error, could not call callback function. Function " << functionName << " with signature void " << Signatures::Class::ChannelData << " not found for class "
                     << JNIUtils::getNameOfClassOfObject(env, dataObject));
             }

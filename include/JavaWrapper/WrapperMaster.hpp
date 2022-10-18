@@ -6,7 +6,7 @@
 #include <map>
 #include <string>
 
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {
@@ -31,7 +31,7 @@ namespace portaible
                     {
                         // Not an error. This might happen when importing shared libraries that also were build with CLAID (e.g., importing PyCLAID from a PythonModule).
                         return;
-                        //PORTAIBLE_THROW(portaible::Exception, "Error, wrapper for class \"" << cppClassName << "\" was registered more than once");
+                        //PORTAIBLE_THROW(claid::Exception, "Error, wrapper for class \"" << cppClassName << "\" was registered more than once");
                     }
                     WrapperType* wrapper = new WrapperType(cppClassName);
                     this->registeredWrappers.insert(std::make_pair(cppClassName, static_cast<WrapperBase*>(wrapper)));
@@ -91,15 +91,15 @@ namespace portaible
 #include "Wrapper.hpp"
 
 #define DECLARE_JAVA_WRAPPER(className) \
-	static volatile portaible::JavaWrapper::RegisterHelper<portaible::JavaWrapper::Wrapper<className>> wrapperRegistrar;\
+	static volatile claid::JavaWrapper::RegisterHelper<claid::JavaWrapper::Wrapper<className>> wrapperRegistrar;\
 
 #define REGISTER_JAVA_WRAPPER(fullyQualifiedClassName) \
-	volatile portaible::JavaWrapper::RegisterHelper<portaible::JavaWrapper::Wrapper<fullyQualifiedClassName>> fullyQualifiedClassName::wrapperRegistrar (std::string(#fullyQualifiedClassName));\
+	volatile claid::JavaWrapper::RegisterHelper<claid::JavaWrapper::Wrapper<fullyQualifiedClassName>> fullyQualifiedClassName::wrapperRegistrar (std::string(#fullyQualifiedClassName));\
 
 #define LAZY_WRAPPER(javaClassName, fullyQualifiedClassName, className) \
     class className##Wrapper##Helper\
     {\
         DECLARE_JAVA_WRAPPER(fullyQualifiedClassName)\
     };\
-    volatile portaible::JavaWrapper::RegisterHelper<portaible::JavaWrapper::Wrapper<fullyQualifiedClassName>> className##Wrapper##Helper::wrapperRegistrar(std::string(#fullyQualifiedClassName), std::string(javaClassName));\
+    volatile claid::JavaWrapper::RegisterHelper<claid::JavaWrapper::Wrapper<fullyQualifiedClassName>> className##Wrapper##Helper::wrapperRegistrar(std::string(#fullyQualifiedClassName), std::string(javaClassName));\
     // Note, that in contrast to REGISTER_JAVA_WRAPPER, here we use another constructor of the registrar, which already matches the corresponding javaClassName to the C++ className.

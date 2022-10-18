@@ -2,7 +2,7 @@
 #include "JNIUtils.hpp"
 #include "JNIFactoryBase.hpp"
 
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {

@@ -9,8 +9,8 @@
 
 #include <jni.h>
 
-using namespace portaible;
-using namespace portaible::JavaWrapper;
+using namespace claid;
+using namespace claid::JavaWrapper;
 extern "C"
 {
     JNIEXPORT void Java_com_example_portaible_Channel_post

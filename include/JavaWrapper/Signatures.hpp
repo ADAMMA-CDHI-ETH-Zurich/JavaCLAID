@@ -7,7 +7,7 @@
 #include "Utilities/StringUtils.hpp"
 #include "Traits/is_integer_no_bool.hpp"
 #include "Utilities/byte.hpp"
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {

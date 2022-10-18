@@ -1,6 +1,6 @@
 #include "JavaWrapper/WrapperMaster.hpp"
 
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {

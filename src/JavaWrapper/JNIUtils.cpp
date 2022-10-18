@@ -1,6 +1,6 @@
 #include "JavaWrapper/JNIUtils.hpp"
 
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {

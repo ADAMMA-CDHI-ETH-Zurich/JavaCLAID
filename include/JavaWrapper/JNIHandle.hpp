@@ -4,7 +4,7 @@
 
 #include "Signatures.hpp"
 
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {

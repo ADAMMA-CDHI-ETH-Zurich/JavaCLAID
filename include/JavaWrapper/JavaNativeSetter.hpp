@@ -84,7 +84,7 @@ public class MyStruct extends Wrapper<MyStruct>
 #include <deque>
 #include <stack>
 
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {

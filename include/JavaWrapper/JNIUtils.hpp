@@ -11,7 +11,7 @@
 #include "Utilities/byte.hpp"
 
 
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {

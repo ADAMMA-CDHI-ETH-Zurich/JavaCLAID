@@ -4,8 +4,8 @@
 #include "JavaWrapper/JNIUtils.hpp"
 #include "Logger/Logger.hpp"
 #include "JavaWrapper/WrapperMaster.hpp"
-using namespace portaible;
-using namespace portaible::JavaWrapper;
+using namespace claid;
+using namespace claid::JavaWrapper;
 extern "C"
 {
     JNIEXPORT void JNICALL Java_com_example_portaible_Wrapper_init(JNIEnv* env, jobject object)

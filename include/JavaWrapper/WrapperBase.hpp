@@ -2,7 +2,7 @@
 
 #include "JavaWrapper/JNIUtils.hpp"
 #include "JavaModule.hpp"
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {

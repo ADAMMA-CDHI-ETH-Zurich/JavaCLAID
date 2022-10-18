@@ -5,8 +5,8 @@
 #include "PortAIble/Audio/AudioData.hpp"
 #include "PortAIbleCore/Logger/Logger.hpp"
 #include "JavaWrapper/Wrapper.hpp"
-using namespace portaible;
-using namespace portaible::JavaWrapper;
+using namespace claid;
+using namespace claid::JavaWrapper;
 
 
 /*

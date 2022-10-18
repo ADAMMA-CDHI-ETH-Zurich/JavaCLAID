@@ -1,7 +1,7 @@
 #pragma once
 #include "JNIUtils.hpp"
 
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {

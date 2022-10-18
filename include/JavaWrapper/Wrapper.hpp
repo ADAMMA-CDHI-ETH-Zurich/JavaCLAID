@@ -71,7 +71,7 @@ namespace claid
                 {
                     Channel<T>* channel = new Channel<T>;
                     std::string channelID = JNIUtils::toStdString(env, jChannelID);
-                    *channel = PORTAIBLE_RUNTIME->channelManager.publish<T>(channelID, module->getUniqueIdentifier());
+                    *channel = CLAID_RUNTIME->channelManager.publish<T>(channelID, module->getUniqueIdentifier());
                     
                     jobject channelObject = channelObjectToJavaChannelObject(env, channel);
 
@@ -93,7 +93,7 @@ namespace claid
                     Logger::printfln("Subscribe 2");
 
                     *channel = 
-                        PORTAIBLE_RUNTIME->channelManager.subscribe<T>(channelID, module->makeSubscriber(callbackFunction), module->getUniqueIdentifier());
+                        CLAID_RUNTIME->channelManager.subscribe<T>(channelID, module->makeSubscriber(callbackFunction), module->getUniqueIdentifier());
                     
                     jobject channelObject = channelObjectToJavaChannelObject(env, channel);
                     Logger::printfln("Subscribe 3");
@@ -201,7 +201,7 @@ namespace claid
 jobject xpublish(JNIEnv* env, std::string channelID)\
 {\
     Channel<T>* channel = new Channel<T>;\
-    *channel = PORTAIBLE_RUNTIME->channelManager.publish<T>(channelID);\
+    *channel = CLAID_RUNTIME->channelManager.publish<T>(channelID);\
     jclass cls = env->FindClass((std::string(Signatures::Class::Channel)).c_str());\
     \
     if(cls == nullptr)\

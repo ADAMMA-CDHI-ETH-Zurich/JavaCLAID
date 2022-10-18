@@ -18,10 +18,10 @@ Java_com_example_portaible_Module_init(JNIEnv* env, jobject wrappedModule)
 {
     JavaModule* module = new JavaModule(env, wrappedModule);
     JNIHandle::setHandle(env, wrappedModule, module);
-    PORTAIBLE_RUNTIME->addModule(static_cast<Module*>(module));
+    CLAID_RUNTIME->addModule(static_cast<Module*>(module));
 
     Logger::printfln("New Java Module");
-    if(PORTAIBLE_RUNTIME->isStarted())
+    if(CLAID_RUNTIME->isStarted())
     {
       Logger::printfln("Init");
       module->startModule();

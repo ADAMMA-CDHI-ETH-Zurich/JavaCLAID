@@ -13,7 +13,7 @@ using namespace claid::JavaWrapper;
 jobject publish(JNIEnv* env, std::string channelID)
 {
     Channel<AudioData>* channel = new Channel<AudioData>;
-    *channel = PORTAIBLE_RUNTIME->channelManager.publish<AudioData>(channelID);
+    *channel = CLAID_RUNTIME->channelManager.publish<AudioData>(channelID);
     // Create new java object of type channel, set handle to channel..
 
     jclass cls = env->FindClass((std::string(Signatures::Class::Channel)).c_str());

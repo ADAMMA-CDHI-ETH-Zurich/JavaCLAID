@@ -12,10 +12,11 @@ namespace claid
     {
         class WrapperMaster : public Singleton<WrapperMaster>
         {
-            // string is the C++ class name
-            std::map<std::string, WrapperBase*> registeredWrappers;
+            private:
+                // string is the C++ class name
+                std::map<std::string, WrapperBase*> registeredWrappers;
 
-            std::map<std::string /* JavaClassName */, std::string /* C++ class name */> javaCppClassNamesMap;
+                std::map<std::string /* JavaClassName */, std::string /* C++ class name */> javaCppClassNamesMap;
 
             public:
                 
@@ -31,23 +32,64 @@ namespace claid
                     {
                         // Not an error. This might happen when importing shared libraries that also were build with CLAID (e.g., importing PyCLAID from a PythonModule).
                         return;
-                        //PORTAIBLE_THROW(claid::Exception, "Error, wrapper for class \"" << cppClassName << "\" was registered more than once");
+                        //CLAID_THROW(claid::Exception, "Error, wrapper for class \"" << cppClassName << "\" was registered more than once");
                     }
                     WrapperType* wrapper = new WrapperType(cppClassName);
                     this->registeredWrappers.insert(std::make_pair(cppClassName, static_cast<WrapperBase*>(wrapper)));
                 }
 
-                void assignJavaClassNameToCppClassName(std::string javaClassName, std::string cppClassName)
+                // Assign wrapper if not done already:
+                void assignWrapperToJavaClassOfObject(JNIEnv* env, jobject object)
                 {
+                    jclass cls = JNIUtils::getClassOfObject(env, object);
+                    assignWrapperToJavaClass(env, cls);
+                    env->DeleteLocalRef(cls);
+                    
+                }
+
+                void assignWrapperToJavaClass(JNIEnv* env, jclass cls)
+                {
+                    jfieldID fieldID = env->GetStaticFieldID(cls, "wrappedClass", "Ljava/lang/String;");
+
+                    std::string className = JNIUtils::getClassName(env, cls);
+
+                    if(fieldID == nullptr)
+                    {
+                        CLAID_THROW(claid::Exception, "Error in JavaWrapper. Tried to retrieve the name of the native class that Java class \"" << className << "\" is a wrapper for. "
+                        << "For this, we tried to look up a static member variable called \"wrappedClass\", however the Java class does not have such a variable. "
+                        << "When defining your wrapper class, please specify a variable private static String wrappedClass=\"namespace::class\", whereas the string specifies which class you want to wrap. "
+                        << "If you defined this variable already, make sure it is *static* !");
+
+                    }
+
+                    jstring wrappedClass = (jstring) env->GetStaticObjectField(cls, fieldID);
+
+                    if(wrappedClass == nullptr)
+                    {
+                        CLAID_THROW(claid::Exception, "Error in JavaWrapper. Tried to retrieve the name of the native class that Java class \"" << className << "\" is a wrapper for. "
+                        << "For this, we tried to look up a static member variable called \"wrappedClass\". We found that the variable exists, but we were unable to retrieve its value. "
+                        << "Is it really a String, or another object? "
+                        << "When defining your wrapper class, please specify a variable private static String wrappedClass=\"namespace::class\", whereas the string specifies which class you want to wrap. ");
+                    }
+
+                    std::string cppClassName = JNIUtils::toStdString(env, wrappedClass);
+                    Logger::printfln("Assigning to %s\n", cppClassName.c_str());
+                    assignWrapperToJavaClassByName(className, cppClassName);
+                }
+
+                void assignWrapperToJavaClassByName(std::string javaClassName, std::string cppClassName)
+                {
+                    Logger::printfln("1\n");
                     auto it = this->javaCppClassNamesMap.find(javaClassName);
+                    Logger::printfln("2\n");
 
                     if(it != javaCppClassNamesMap.end())
                     {
                         if(it->second != cppClassName)
                         {
                             // It was tried to register the same JavaClass again for a different C++  class.
-                            PORTAIBLE_THROW(Exception, "Failed to assign wrapper to java class " << javaClassName << "."
-                            << "It was tried to assign wrapper for C++ class \"" << cppClassName << "\" to java class \"" << javaClassName << "\", however"
+                            CLAID_THROW(Exception, "Failed to assign wrapper to java class \"" << javaClassName << "\"."
+                            << "It was tried to assign wrapper for C++ class \"" << cppClassName << "\" to java class \"" << javaClassName << "\", however "
                             << "there was already registered another C++ class as wrapper for this java class, namely  \"" << it->second << "\".");
                         }
                         else
@@ -57,8 +99,35 @@ namespace claid
                             return ;
                         }   
                     }
-                    this->registeredWrappers[cppClassName]->assignJavaClassName(javaClassName);
+                                        Logger::printfln("3\n");
+
+                    auto it2 = this->registeredWrappers.find(cppClassName);
+
+                    if(it2 == this->registeredWrappers.end())
+                    {
+                        CLAID_THROW(Exception, "Failed to assign wrapper to java class \"" << javaClassName << "\"."
+                        << "It was tried to assign wrapper for C++ class \"" << cppClassName << "\" to java class \"" << javaClassName << "\", however "
+                        << "the cpp class \"" << cppClassName << "\" does not exist or no Wrapper was implemented for it. "
+                        << "If the class exists, did you register it using the REGISTER_SERIALIZATION macro?");
+                    }
+
+                    it2->second->assignJavaClassName(javaClassName);
+                                        Logger::printfln("4\n");
+
                     this->javaCppClassNamesMap.insert(std::make_pair(javaClassName, cppClassName));
+                                        Logger::printfln("5\n");
+
+                }
+
+                // string is the C++ class name
+                const std::map<std::string, WrapperBase*>& getRegisteredWrappers()
+                {
+                    return this->registeredWrappers;
+                }
+
+                const std::map<std::string, std::string >& getJavaCppClassNamesMap()
+                {
+                    return this->javaCppClassNamesMap;
                 }
 
                 
@@ -78,7 +147,7 @@ namespace claid
                 RegisterHelper(std::string cppClassName, std::string javaClassName) 
 				{
 					WrapperMaster::getInstance()->registerWrapper<WrapperType>(cppClassName);
-                    WrapperMaster::getInstance()->assignJavaClassNameToCppClassName(javaClassName, cppClassName);
+                    WrapperMaster::getInstance()->assignWrapperToJavaClassByName(javaClassName, cppClassName);
 				}
 
 	

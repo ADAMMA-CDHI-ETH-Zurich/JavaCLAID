@@ -31,21 +31,21 @@ namespace claid
 
                     if(cls == nullptr)
                     {
-                        PORTAIBLE_THROW(Exception, "Cannot create java object, failed to lookup ChannelData class " << Signatures::Class::ChannelData);
+                        CLAID_THROW(Exception, "Cannot create java object, failed to lookup ChannelData class " << Signatures::Class::ChannelData);
                     }
 
                     jmethodID constructor = env->GetMethodID(cls, "<init>", Signatures::Function::functionSignatureVoid({"java/lang/Object"}).c_str());
 
                     if(constructor == nullptr)
                     {
-                        PORTAIBLE_THROW(Exception, "Cannot create java object, failed to lookup constructor for ChannelData class " << Signatures::Class::ChannelData);
+                        CLAID_THROW(Exception, "Cannot create java object, failed to lookup constructor for ChannelData class " << Signatures::Class::ChannelData);
                     }
 
                     channelDataObject = env->NewObject(cls, constructor, data);
 
                     if(channelDataObject == nullptr)
                     {
-                        PORTAIBLE_THROW(Exception, "Cannot create java object, object with class signature " << Signatures::Class::ChannelData << " could not be created.");
+                        CLAID_THROW(Exception, "Cannot create java object, object with class signature " << Signatures::Class::ChannelData << " could not be created.");
                     }
 
                     env->DeleteLocalRef(cls);
@@ -206,21 +206,21 @@ jobject xpublish(JNIEnv* env, std::string channelID)\
     \
     if(cls == nullptr)\
     {\
-        PORTAIBLE_THROW(Exception, "Cannot publish, failed to lookup channel class " << Signatures::Class::Channel);\
+        CLAID_THROW(Exception, "Cannot publish, failed to lookup channel class " << Signatures::Class::Channel);\
     }\
     \
     jmethodID constructor = env->GetMethodID(cls, "<init>", "()V");\
     \
     if(constructor == nullptr)\
     {\
-        PORTAIBLE_THROW(Exception, "Cannot publish, failed to lookup constructor for channel class " << Signatures::Class::Channel);\
+        CLAID_THROW(Exception, "Cannot publish, failed to lookup constructor for channel class " << Signatures::Class::Channel);\
     }\
     \
     jobject channelObject = env->NewObject(cls, constructor);\
     \
     if(channelObject == nullptr)\
     {\
-        PORTAIBLE_THROW(Exception, "Cannot publish, to create channel object " << Signatures::Class::Channel);\
+        CLAID_THROW(Exception, "Cannot publish, to create channel object " << Signatures::Class::Channel);\
     }\
 \
     JNIHandle::setHandle(env, channelObject, channel);\

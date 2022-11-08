@@ -14,12 +14,12 @@ struct MyStruct
 };
 // Implement wrapper functions for each variable (function bodies not implemented here because I think the point is clear,
 // but ofc, normally you'd need to implement all those functions):
-JNIEXPORT void JNICALL Java_com_example_portaible_Wrapper_setSomeInt(JNIEnv* env, jobject object, jint int);
-JNIEXPORT jint JNICALL Java_com_example_portaible_Wrapper_getSomeInt(JNIEnv* env, jobject object);
-JNIEXPORT void JNICALL Java_com_example_portaible_Wrapper_setSomeFloat(JNIEnv* env, jobject object, jfloat int);
-JNIEXPORT jfloat JNICALL Java_com_example_portaible_Wrapper_getSomeFloat(JNIEnv* env, jobject object);
-JNIEXPORT void JNICALL Java_com_example_portaible_Wrapper_setSomeString(JNIEnv* env, jobject object, jobject int);
-JNIEXPORT jobject JNICALL Java_com_example_portaible_Wrapper_getSomeString(JNIEnv* env, jobject object);
+JNIEXPORT void JNICALL Java_JavaCLAID_Wrapper_setSomeInt(JNIEnv* env, jobject object, jint int);
+JNIEXPORT jint JNICALL Java_JavaCLAID_Wrapper_getSomeInt(JNIEnv* env, jobject object);
+JNIEXPORT void JNICALL Java_JavaCLAID_Wrapper_setSomeFloat(JNIEnv* env, jobject object, jfloat int);
+JNIEXPORT jfloat JNICALL Java_JavaCLAID_Wrapper_getSomeFloat(JNIEnv* env, jobject object);
+JNIEXPORT void JNICALL Java_JavaCLAID_Wrapper_setSomeString(JNIEnv* env, jobject object, jobject int);
+JNIEXPORT jobject JNICALL Java_JavaCLAID_Wrapper_getSomeString(JNIEnv* env, jobject object);
 
 
 Java:
@@ -165,12 +165,12 @@ namespace claid
                 {
                     if(this->targetQueue.size() == 0)
                     {
-                        PORTAIBLE_THROW(Exception, "Error in JavaNativerSetter::set. Somehow, callFloatOrDouble was called with an empty target queue. This should not happen and is definitely a bug.");
+                        CLAID_THROW(Exception, "Error in JavaNativerSetter::set. Somehow, callFloatOrDouble was called with an empty target queue. This should not happen and is definitely a bug.");
                     }                  
 
                     if(this->targetQueue.size() > 1)
                     {
-                        PORTAIBLE_THROW(Exception, "Error, failed to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function."
+                        CLAID_THROW(Exception, "Error, failed to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function."
                                 << "The type of the member variable is a primitive type (float or double), however it was tried to assign a value to one of it's member variables."
                                 << "In other words, the primitive variable \"" << property << "\" does not have a member variable of name \"" << this->targetQueue[1] << "\".");
                     }
@@ -180,7 +180,7 @@ namespace claid
 
                 void throwTypeMismatch(const char* property, std::string primitiveType, std::string expectedType)
                 {
-                     PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function, " 
+                     CLAID_THROW(Exception, "Error, tried to set member variable \"" << property << "\" of Native C++ class from Java using set(...) function, " 
                             << "but the passed object is not a java object of class " << expectedType
                             << "As \"" << property << "\" is a C++ " << primitiveType << " type, it was expected that the passed java object (the value of which shall be assigned to the C++ object) is of type " 
                             << expectedType << ", however it is \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
@@ -328,7 +328,7 @@ namespace claid
                         int tmp = 0;
                         if(!JNIUtils::objectCallIntFunction(env, this->valueToSet, "size", "()I", tmp))
                         {
-                            PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
+                            CLAID_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
                                 << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                                 << "As such, it was expected that the Java object has a size function to retrieve the amount of stored elements."
                                 << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
@@ -351,7 +351,7 @@ namespace claid
                     int tmp = 0;
                     if(!JNIUtils::objectCallIntFunction(env, this->valueToSet, "size", "()I", tmp))
                     {
-                        PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
+                        CLAID_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
                             << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                             << "As such, it was expected that the Java object has a size function to retrieve the amount of stored elements."
                             << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
@@ -371,7 +371,7 @@ namespace claid
                     jobject container = sequenceObjectsStack.top();
                     if(!JNIUtils::objectCallIntFunction(env, container, "size", "()I", size))
                     {
-                        PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
+                        CLAID_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
                             << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                             << "As such, it was expected that the Java object has a size function to retrieve the amount of stored elements."
                             << "A size() function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
@@ -380,7 +380,7 @@ namespace claid
 
                     if(i >= size)
                     {
-                        PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
+                        CLAID_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
                             << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                             << "The provided Java object is a collection as wel, however it does not contain enough elements to fill the Native C++ container (C++: " << i + 1<< " vs. Java: " << size << ").");                    
                     }
@@ -388,7 +388,7 @@ namespace claid
 
                     if(!JNIUtils::getElementAtIndex(this->env, container, i, this->valueToSet))
                     {
-                        PORTAIBLE_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
+                        CLAID_THROW(Exception, "Error, tried to set member variable \"" << this->lastClassProperty << "\" of Native C++ class\"" << this->lastClassName << "\" from Java using set(...) function." 
                                 << "The Native C++ type is a collection (e.g. vector, map, ...), that stores multiple elements." 
                                 << "As such, it was expected that the Java object has a \"elementAt()\" to retrieve an Element by index."
                                 << "This function, however, is not available for the passed Java object of type \"" << JNIUtils::getNameOfClassOfObject(env, this->valueToSet) << "\".");
@@ -421,7 +421,7 @@ namespace claid
 
                 void read(char*& data, size_t size)
                 {
-                    PORTAIBLE_THROW(Exception, "Error, JavaNativeSetter::read called. Function not implemented!");
+                    CLAID_THROW(Exception, "Error, JavaNativeSetter::read called. Function not implemented!");
                 }
 
                 template<typename NativeType>
@@ -441,7 +441,7 @@ namespace claid
 
                     if(!this->finished)
                     {
-                        PORTAIBLE_THROW(Exception, "Tried to assign a value to member variable \"" << targetVariable << "\" to Native C++ class \""
+                        CLAID_THROW(Exception, "Tried to assign a value to member variable \"" << targetVariable << "\" to Native C++ class \""
                         << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<NativeType>() << "\" from Java, however a reflected member variable with name "
                         << "\"" << targetVariable << "\" was not found. Please make sure the variable was included in the reflect function of the mentioned class.");
                     }

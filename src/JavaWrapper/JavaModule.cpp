@@ -29,7 +29,7 @@ namespace claid
             args.version = JNI_VERSION_1_6; // choose your JNI version
             args.name = NULL; // you might want to give the java thread a name
             args.group = NULL; // you might want to assign the java thread to a ThreadGroup
-            this->javaVM->AttachCurrentThread(&env, &args);
+            this->javaVM->AttachCurrentThread((void**)&env, &args);
 
             jclass cls = JNIUtils::getClassOfObject(env, javaObject);
             jmethodID mid =
@@ -37,7 +37,7 @@ namespace claid
 
             if(mid == nullptr)
             {
-                PORTAIBLE_THROW(Exception, "Error, function initialize with signature void () not found for class "
+                CLAID_THROW(Exception, "Error, function initialize with signature void () not found for class "
                     << JNIUtils::getClassName(env, cls));
             }
             else
@@ -51,10 +51,13 @@ namespace claid
 
         jobject JavaModule::publish(JNIEnv* env, jclass dataType, jstring channelID)
         {
+            // Assign wrapper if not done already:
+            WrapperMaster::getInstance()->assignWrapperToJavaClass(env, dataType);
+
             std::string className = JNIUtils::getClassName(env, dataType);
             if(!WrapperMaster::getInstance()->isWrapperAssignedToJavaClass(className))
             {
-                PORTAIBLE_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
+                CLAID_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
             }
 
             WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapperForJavaClass(className);
@@ -65,10 +68,13 @@ namespace claid
 
         jobject JavaModule::subscribe(JNIEnv* env, jclass dataType, jstring channelID, jstring functionCallbackName, jstring functionSignature)
         {
+            // Assign wrapper if not done already:
+            WrapperMaster::getInstance()->assignWrapperToJavaClass(env, dataType);
+
             std::string className = JNIUtils::getClassName(env, dataType);
             if(!WrapperMaster::getInstance()->isWrapperAssignedToJavaClass(className))
             {
-                PORTAIBLE_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
+                CLAID_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
             }
 
             WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapperForJavaClass(className);
@@ -86,7 +92,7 @@ namespace claid
             if(mid == nullptr)
             {
                 claid::Logger::printfln("NULL");
-                PORTAIBLE_THROW(Exception, "Error, could not call callback function. Function " << functionName << " with signature void " << Signatures::Class::ChannelData << " not found for class "
+                CLAID_THROW(Exception, "Error, could not call callback function. Function " << functionName << " with signature void " << Signatures::Class::ChannelData << " not found for class "
                     << JNIUtils::getNameOfClassOfObject(env, dataObject));
             }
             else

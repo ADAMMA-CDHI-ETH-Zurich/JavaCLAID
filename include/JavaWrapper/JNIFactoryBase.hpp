@@ -23,7 +23,7 @@ namespace claid
 
                 if(cls == nullptr)
                 {
-                    PORTAIBLE_THROW(Exception, "Cannot create java object, failed to lookup class " << className);
+                    CLAID_THROW(Exception, "Cannot create java object, failed to lookup class " << className);
                 }
 
                 std::string constructorSignature = std::string("(") + constructerParameters + std::string(")V");
@@ -31,14 +31,14 @@ namespace claid
 
                 if(constructor == nullptr)
                 {
-                    PORTAIBLE_THROW(Exception, "Cannot create java object, failed to lookup constructor for class " << className);
+                    CLAID_THROW(Exception, "Cannot create java object, failed to lookup constructor for class " << className);
                 }
 
                 object = env->NewObject(cls, constructor, parameters...);
 
                 if(object == nullptr)
                 {
-                    PORTAIBLE_THROW(Exception, "Cannot create java object, object with class signature " << className << " could not be created.");
+                    CLAID_THROW(Exception, "Cannot create java object, object with class signature " << className << " could not be created.");
                 }
 
                 env->DeleteLocalRef(cls);

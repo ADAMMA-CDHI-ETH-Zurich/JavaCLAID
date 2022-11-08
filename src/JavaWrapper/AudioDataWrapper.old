@@ -20,21 +20,21 @@ jobject publish(JNIEnv* env, std::string channelID)
 
     if(cls == nullptr)
     {
-        PORTAIBLE_THROW(Exception, "Cannot publish, failed to lookup channel class " << Signatures::Class::Channel);
+        CLAID_THROW(Exception, "Cannot publish, failed to lookup channel class " << Signatures::Class::Channel);
     }
 
     jmethodID constructor = env->GetMethodID(cls, "<init>", "()V");
 
     if(constructor == nullptr)
     {
-        PORTAIBLE_THROW(Exception, "Cannot publish, failed to lookup constructor for channel class " << Signatures::Class::Channel);
+        CLAID_THROW(Exception, "Cannot publish, failed to lookup constructor for channel class " << Signatures::Class::Channel);
     }
 
     jobject channelObject = env->NewObject(cls, constructor);
 
     if(channelObject == nullptr)
     {
-        PORTAIBLE_THROW(Exception, "Cannot publish, to create channel object " << Signatures::Class::Channel);
+        CLAID_THROW(Exception, "Cannot publish, to create channel object " << Signatures::Class::Channel);
     }
 
     JNIHandle::setHandle(env, channelObject, channel);
@@ -75,7 +75,7 @@ extern "C"
         return channel;
     }
 
-    JNIEXPORT void JNICALL Java_com_example_portaible_AudioData_post(JNIEnv* env, jobject data, jobject channel)
+    JNIEXPORT void JNICALL Java_JavaCLAID_AudioData_post(JNIEnv* env, jobject data, jobject channel)
     {
                 Logger::printfln("Invoking post method 2");
 
@@ -89,7 +89,7 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL
-    Java_com_example_portaible_AudioData_init(JNIEnv* env, jobject wrappedAudioData)
+    Java_JavaCLAID_AudioData_init(JNIEnv* env, jobject wrappedAudioData)
     {
         AudioData* audioData = new AudioData;
         JNIHandle::setHandle(env, wrappedAudioData, audioData);

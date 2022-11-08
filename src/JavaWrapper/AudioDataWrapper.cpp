@@ -27,7 +27,7 @@ REGISTER_JAVA_WRAPPER("com.example.portaible.AudioData", claid::AudioData, Audio
 using namespace claid;
 extern "C"
 {
-    JNIEXPORT void Java_com_example_portaible_AudioData_set
+    JNIEXPORT void Java_JavaCLAID_AudioData_set
       (JNIEnv* env, jobject thiz, jbyteArray data)
     {
         AudioData* audioData = JavaWrapper::JNIHandle::getHandle<AudioData>(env, thiz);
@@ -46,7 +46,7 @@ extern "C"
 
     }
 
-    JNIEXPORT jbyteArray Java_com_example_portaible_AudioData_get
+    JNIEXPORT jbyteArray Java_JavaCLAID_AudioData_get
       (JNIEnv* env, jobject thiz, jbyteArray data)
     {
         // AudioData* audioData = JNIHandle::getHandle<AudioData>(env, thiz);

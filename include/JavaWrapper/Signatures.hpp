@@ -16,7 +16,7 @@ namespace claid
             namespace Class
             {
                 #define CLASS_SIGNATURE(name) const std::string name = prefix + std::string(#name);
-                static const std::string prefix = "com/example/portaible/";
+                static const std::string prefix = "JavaCLAID/";
 
                 CLASS_SIGNATURE(Channel)
                 CLASS_SIGNATURE(ChannelData)
@@ -63,6 +63,14 @@ namespace claid
                 getJavaClassNameOfPrimitiveType()
                 {
                     return "java/lang/Integer";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, long>::value || std::is_same<T, unsigned long>::value, std::string>::type
+                getJavaClassNameOfPrimitiveType()
+                {
+                    // Yes, it's "J", because "L" is used for clases.
+                    return "java/lang/Long";
                 }
 
                 template<typename T>
@@ -124,6 +132,14 @@ namespace claid
                 getSignatureOfPrimitiveType()
                 {
                     return "I";
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, long>::value || std::is_same<T, unsigned long>::value, std::string>::type
+                getSignatureOfPrimitiveType()
+                {
+                    // Yes, it's "J", because "L" is used for clases.
+                    return "J";
                 }
 
                 template<typename T>

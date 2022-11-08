@@ -26,7 +26,7 @@ namespace claid
             // default case
             static jobject spawn(JNIEnv* env) 
             {
-                PORTAIBLE_THROW(Exception, "Error, cannot convert Native C++ class " << TypeChecking::getCompilerIndependentTypeNameOfClass<T>() << " to java object."
+                CLAID_THROW(Exception, "Error, cannot convert Native C++ class " << TypeChecking::getCompilerIndependentTypeNameOfClass<T>() << " to java object."
                     << "We do not know how to do the conversion (which Java object corresponds to this type?).");
                 //____INVALID_TYPE_IN_JNI_FACTORY_TYPE_<T>::invoke();
             }
@@ -34,7 +34,7 @@ namespace claid
             // default case
             static jobject spawnImmutable(JNIEnv* env, T& member) 
             {
-                PORTAIBLE_THROW(Exception, "Error, cannot convert Native C++ class " << TypeChecking::getCompilerIndependentTypeNameOfClass<T>() << " to java object."
+                CLAID_THROW(Exception, "Error, cannot convert Native C++ class " << TypeChecking::getCompilerIndependentTypeNameOfClass<T>() << " to java object."
                     << "We do not know how to do the conversion (which Java object corresponds to this type?).");
                 //____INVALID_TYPE_IN_JNI_FACTORY_TYPE_<T>::invoke();
             }

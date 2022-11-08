@@ -1,6 +1,3 @@
-
-#ifdef __ANDROID__
-
 #include "Channel/Channel.hpp"
 
 #include "Logger/Logger.hpp"
@@ -13,7 +10,7 @@ using namespace claid;
 using namespace claid::JavaWrapper;
 extern "C"
 {
-    JNIEXPORT void Java_com_example_portaible_Channel_post
+    JNIEXPORT void Java_JavaCLAID_Channel_post
       (JNIEnv* env, jobject wrappedChannel, jobject data)
     {
         // From the java side, it is guaranteed that the data type of data
@@ -22,16 +19,17 @@ extern "C"
         // it was created like Channel<AudioData> audioChannel = module.publish(AudioData.class, channelID).
         // Therefore, audioChannel.post() has to be called with an object of type AudioData, which
         // is ensured at compile time.
+
+        // Assign wrapper if not done already:
+        WrapperMaster::getInstance()->assignWrapperToJavaClassOfObject(env, data);
     
         std::string className = JNIUtils::getNameOfClassOfObject(env, data);
         if(!WrapperMaster::getInstance()->isWrapperAssignedToJavaClass(className))
         {
-            PORTAIBLE_THROW(Exception, "Error, post was called for an object of java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
+            CLAID_THROW(Exception, "Error, post was called for an object of java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
         }
 
         WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapperForJavaClass(className);
         wrapper->post(env, wrappedChannel, data);
     }
 }
-
-#endif

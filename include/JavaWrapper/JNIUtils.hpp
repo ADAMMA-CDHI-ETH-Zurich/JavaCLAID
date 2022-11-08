@@ -23,20 +23,6 @@ namespace claid
                 static jmethodID gFindClassMethod;
                 static bool onLoadCalled;
 
-
-                static JNIEnv* getEnv() 
-                {
-                    JNIEnv *env;
-                    int status = jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
-                    if(status < 0) {    
-                        status = jvm->AttachCurrentThread(&env, NULL);
-                        if(status < 0) {        
-                            return nullptr;
-                        }
-                    }
-                    return env;
-                }
-
                 template<typename T>
                 static typename std::enable_if<std::is_same<T, CLAID::byte>::value, std::string>::type
                 getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
@@ -56,6 +42,14 @@ namespace claid
                 getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
                 {
                     return "intValue";
+                }
+
+                // long can be either 32 or 64 bit: https://en.cppreference.com/w/cpp/language/types
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, long>::value || std::is_same<T, unsigned long>::value, std::string>::type
+                getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
+                {
+                    return "longValue";
                 }
 
                 template<typename T>
@@ -121,6 +115,13 @@ namespace claid
                 callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
                 {
                     return env->CallIntMethod(object, methodID);
+                }
+
+                template<typename T>
+                static typename std::enable_if<std::is_same<T, long>::value || std::is_same<T, unsigned long>::value, T>::type
+                callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
+                {
+                    return env->CallLongMethod(object, methodID);
                 }
 
                 template<typename T>
@@ -230,8 +231,15 @@ namespace claid
                     JNIEnv* env = getEnv();
                     Logger::printfln("JNIUtils onLoad 2");
 
-                    // Just use any class of portaible.
-                    auto randomClass = env->FindClass(Signatures::Class::Channel.c_str());
+                    // Just use any class.
+                    std::string className = "java/lang/Class";
+                    auto randomClass = env->FindClass(className.c_str());
+
+                    if(randomClass == nullptr)
+                    {
+                        CLAID_THROW(claid::Exception, "Error in claid::JNIUtils::onLoad. Cannot find class " << className << " therefore cannot find ClassLoader.")
+                    }
+
                     jclass classClass = env->GetObjectClass(randomClass);
                                         Logger::printfln("JNIUtils onLoad 3");
 
@@ -263,7 +271,7 @@ namespace claid
                 {
                     if(!onLoadCalled)
                     {
-                        PORTAIBLE_THROW(Exception, "Error, JNIUtils::findClass was called without prior call to onLoad. Please make sure that JNIUtils::onLoad "
+                        CLAID_THROW(Exception, "Error, JNIUtils::findClass was called without prior call to onLoad. Please make sure that JNIUtils::onLoad "
                         "was called in JNI_OnLoad in native code.");
                     }
 
@@ -439,7 +447,7 @@ namespace claid
                     // Does java object match the primitive?
                     if(className != expectedJavaPrimitiveClassName)
                     {
-                        PORTAIBLE_THROW(Exception, "Error, cannot convert javaObject to native C++ primitive " << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>() << "."
+                        CLAID_THROW(Exception, "Error, cannot convert javaObject to native C++ primitive " << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>() << "."
                         << "Java object is of type \"" << className << "\", however an object of type \"" << expectedJavaPrimitiveClassName << "\" was expected.");
                     }
 
@@ -453,7 +461,7 @@ namespace claid
                     env->DeleteLocalRef(objectClass);
                     if(mGetValue == NULL)
                     {
-                        PORTAIBLE_THROW(Exception, "Error, cannot convert java object of type \"" << className << "\" to native C++ primitive \"" << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>() << "\"."
+                        CLAID_THROW(Exception, "Error, cannot convert java object of type \"" << className << "\" to native C++ primitive \"" << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>() << "\"."
                         << "Method \"" << getterMethodName << "\" was not found in object of type \"" << className << "\"");
                     } 
 
@@ -474,7 +482,7 @@ namespace claid
                     // Does java object match the primitive?
                     if(className != expectedJavaPrimitiveClassName)
                     {
-                        PORTAIBLE_THROW(Exception, "Error, cannot convert native C++ primitive " << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>() << "to java object."
+                        CLAID_THROW(Exception, "Error, cannot convert native C++ primitive " << TypeChecking::getCompilerSpecificCompileTypeNameOfClass<T>() << "to java object."
                         << "Java object is of type \"" << className << "\", however an object of type \"" << expectedJavaPrimitiveClassName << "\" was expected.");
                     }
 
@@ -564,25 +572,43 @@ namespace claid
 
                     if(cls == nullptr)
                     {
-                        PORTAIBLE_THROW(Exception, "Cannot create java Vector object, failed to lookup class " << className);
+                        CLAID_THROW(Exception, "Cannot create java Vector object, failed to lookup class " << className);
                     }
 
                     jmethodID constructor = env->GetMethodID(cls, "<init>", "(I)V");
 
                     if(constructor == nullptr)
                     {
-                        PORTAIBLE_THROW(Exception, "Cannot create java Vector object, failed to lookup constructor for class " << className);
+                        CLAID_THROW(Exception, "Cannot create java Vector object, failed to lookup constructor for class " << className);
                     }
 
                     jobject javaObject = env->NewObject(cls, constructor, size);
 
                     if(javaObject == nullptr)
                     {
-                        PORTAIBLE_THROW(Exception, "Cannot create java Vector object, object with class signature " << className << " could not be created.");
+                        CLAID_THROW(Exception, "Cannot create java Vector object, object with class signature " << className << " could not be created.");
                     }
                     env->DeleteLocalRef(cls);
 
                     return javaObject;
+                }
+
+                static JavaVM* getJavaVM()
+                {
+                    return jvm;
+                }
+
+                static JNIEnv* getEnv() 
+                {
+                    JNIEnv *env;
+                    int status = jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
+                    if(status < 0) {    
+                        status = jvm->AttachCurrentThread((void**)&env, NULL);
+                        if(status < 0) {        
+                            return nullptr;
+                        }
+                    }
+                    return env;
                 }
         };
     }

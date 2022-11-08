@@ -8,7 +8,6 @@
 #include "JNIHandle.hpp"
 #include "Exception/Exception.hpp"
 #include "TypeChecking/TypeCheckingFunctions.hpp"
-#include "Utilities/byte.hpp"
 
 
 namespace claid
@@ -23,8 +22,13 @@ namespace claid
                 static jmethodID gFindClassMethod;
                 static bool onLoadCalled;
 
+                // Why not map char to java/lang/Character? Because Character class in Java is 16 bits, while in C++ its only always 8 bits.
+                // Hence, Java's byte type corresponds to C++ chars type. 
+                // And what about the java/lang/Character type? There is no corresponding C++ type.
+                // If there is a java/lang/Character object coming from Java, it needs to be converted to uint16_t (unsigned 16 bit signed integer).
+                // See https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, CLAID::byte>::value, std::string>::type
+                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, std::string>::type
                 getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
                 {
                     return "byteValue";
@@ -73,8 +77,10 @@ namespace claid
                     return "doubleValue";
                 }
 
+                // Note that Java's Character class is 16 bit. 
+                // Further note: char16_t can neither be signed nor unsigned.
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, std::string>::type
+                static typename std::enable_if<std::is_same<T, char16_t>::value, std::string>::type
                 getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
                 {
                     return "charValue";
@@ -89,9 +95,13 @@ namespace claid
 
                 // ================================================================================
 
-                // Why not use int8_t? Because int8_t might be defined as signed char, depending on the compiler
+                // Why not map char to java/lang/Character? Because Character class in Java is 16 bits, while in C++ its only always 8 bits.
+                // Hence, Java's byte type corresponds to C++ chars type. 
+                // And what about the java/lang/Character type? There is no corresponding C++ type.
+                // If there is a java/lang/Character object coming from Java, it needs to be converted to uint16_t (unsigned 16 bit signed integer).
+                // See https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, CLAID::byte>::value, T>::type
+                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, T>::type
                 callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
                 {
                     // Force conversion to byte.
@@ -100,7 +110,7 @@ namespace claid
                     // Thus, we can force the cast by reinterpreting the memory address, even though the compiler would complain.
                     jbyte jByte = env->CallByteMethod(object, methodID);
                 
-                    return *reinterpret_cast<CLAID::byte*>(&jByte);
+                    return jByte;
                 }
 
                 template<typename T>
@@ -145,14 +155,14 @@ namespace claid
                     return env->CallDoubleMethod(object, methodID);
                 }
 
-                // Why distinguish both? See: https://stackoverflow.com/questions/16503373/difference-between-char-and-signed-char-in-c
-                // The c++ standard does not define whether "char" is "signed char" or "unsigned char".s
-                template<typename T>
-                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, T>::type
-                callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
-                {
-                    return env->CallCharMethod(object, methodID);
-                }
+                // // Why distinguish both? See: https://stackoverflow.com/questions/16503373/difference-between-char-and-signed-char-in-c
+                // // The c++ standarda does not define whether "char" is "signed char" or "unsigned char".
+                // template<typename T>
+                // static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, T>::type
+                // callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
+                // {
+                //     return env->CallCharMethod(object, methodID);
+                // }
 
                 template<typename T>
                 static typename std::enable_if<std::is_same<T, bool>::value, T>::type
@@ -163,10 +173,13 @@ namespace claid
 
                 // ================================================================================
 
-                // Why not use int8_t? Because int8_t might be defined as signed char, depending on the compiler
-                // See: https://stackoverflow.com/questions/16503373/difference-between-char-and-signed-char-in-c
+                // Why not map char to java/lang/Character? Because Character class in Java is 16 bits, while in C++ its only always 8 bits.
+                // Hence, Java's byte type corresponds to C++ chars type. 
+                // And what about the java/lang/Character type? There is no corresponding C++ type.
+                // If there is a java/lang/Character object coming from Java, it needs to be converted to uint16_t (unsigned 16 bit signed integer).
+                // See https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, CLAID::byte>::value>::type
+                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, T>::type
                 setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
                 {
                     env->SetFloatField(object, fieldID, value);
@@ -207,8 +220,10 @@ namespace claid
                     env->SetDoubleField(object, fieldID, value);
                 }
 
+                // Note that Java's Character class is 16 bit. 
+                // Further note: char16_t can neither be signed nor unsigned.
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, T>::type
+                static typename std::enable_if<std::is_same<T, char16_t>::value, void>::type
                 setPrimitiveField(JNIEnv* env, jfieldID fieldID, jobject& object, T& value)
                 {
                     env->SetCharField(object, fieldID, value);
@@ -226,10 +241,8 @@ namespace claid
                 // See https://stackoverflow.com/questions/13263340/findclass-from-any-thread-in-android-jni/16302771#16302771
                 static void onLoad(JavaVM* javaVM)
                 {
-                    Logger::printfln("JNIUtils onLoad");
                     JNIUtils::jvm = javaVM;
                     JNIEnv* env = getEnv();
-                    Logger::printfln("JNIUtils onLoad 2");
 
                     // Just use any class.
                     std::string className = "java/lang/Class";
@@ -241,20 +254,16 @@ namespace claid
                     }
 
                     jclass classClass = env->GetObjectClass(randomClass);
-                                        Logger::printfln("JNIUtils onLoad 3");
 
                     auto classLoaderClass = env->FindClass("java/lang/ClassLoader");
                     auto getClassLoaderMethod = env->GetMethodID(classClass, "getClassLoader",
                                                             "()Ljava/lang/ClassLoader;");
-                                                            Logger::printfln("JNIUtils onLoad 4");
 
                     jobject tmpClassLoader = env->CallObjectMethod(randomClass, getClassLoaderMethod);
                     gClassLoader = env->NewGlobalRef(tmpClassLoader);
                     gFindClassMethod = env->GetMethodID(classLoaderClass, "findClass",
                                                     "(Ljava/lang/String;)Ljava/lang/Class;");
                     onLoadCalled = true;
-                                        Logger::printfln("JNIUtils onLoad 5");
-
                 }
 
                 static void triggerGarbageCollector(JNIEnv* env)

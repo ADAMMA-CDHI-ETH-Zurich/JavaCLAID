@@ -6,7 +6,6 @@
 
 #include "Utilities/StringUtils.hpp"
 #include "Traits/is_integer_no_bool.hpp"
-#include "Utilities/byte.hpp"
 namespace claid
 {
     namespace JavaWrapper
@@ -44,8 +43,13 @@ namespace claid
 
             namespace Primitive
             {
+                // Why not map char to java/lang/Character? Because Character class in Java is 16 bits, while in C++ its only always 8 bits.
+                // Hence, Java's byte type corresponds to C++ chars type. 
+                // And what about the java/lang/Character type? There is no corresponding C++ type.
+                // If there is a java/lang/Character object coming from Java, it needs to be converted to uint16_t (unsigned 16 bit signed integer).
+                // See https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, CLAID::byte>::value, std::string>::type
+                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, std::string>::type
                 getJavaClassNameOfPrimitiveType()
                 {
                     return "java/lang/Byte";
@@ -95,8 +99,10 @@ namespace claid
                     return "java/lang/Double";
                 }
 
+                // Note that Java's Character class is 16 bit. 
+                // Further note: char16_t can neither be signed nor unsigned.
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, std::string>::type
+                static typename std::enable_if<std::is_same<T, char16_t>::value, std::string>::type
                 getJavaClassNameOfPrimitiveType()
                 {
                     return "java/lang/Character";
@@ -111,15 +117,19 @@ namespace claid
 
                 // =====================================================================
 
-                // Why not use int8_t? Because int8_t might be defined as signed char, depending on the compiler
-                // See: https://stackoverflow.com/questions/16503373/difference-between-char-and-signed-char-in-c
+                // Why not map char to java/lang/Character? Because Character class in Java is 16 bits, while in C++ its only always 8 bits.
+                // Hence, Java's byte type corresponds to C++ chars type. 
+                // And what about the java/lang/Character type? There is no corresponding C++ type.
+                // If there is a java/lang/Character object coming from Java, it needs to be converted to uint16_t (unsigned 16 bit signed integer).
+                // See https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, CLAID::byte>::value, std::string>::type
+                typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, std::string>::type
                 getSignatureOfPrimitiveType()
                 {
                     return "B";
                 }
 
+                // int16_t should be typedef'd as short.
                 template<typename T>
                 static typename std::enable_if<std::is_same<T, int16_t>::value || std::is_same<T, uint16_t>::value, std::string>::type
                 getSignatureOfPrimitiveType()
@@ -134,6 +144,7 @@ namespace claid
                     return "I";
                 }
 
+                // long CAN be 32 bit OR 64 bit (Windows vs Linux and Mac) -> https://en.cppreference.com/w/cpp/language/types
                 template<typename T>
                 static typename std::enable_if<std::is_same<T, long>::value || std::is_same<T, unsigned long>::value, std::string>::type
                 getSignatureOfPrimitiveType()
@@ -164,8 +175,10 @@ namespace claid
                     return "D";
                 }
 
+                // Note that Java's Character class is 16 bit. 
+                // Further note: char16_t can neither be signed nor unsigned.
                 template<typename T>
-                typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, std::string>::type
+                typename std::enable_if<std::is_same<T, char16_t>::value, std::string>::type
                 getSignatureOfPrimitiveType()
                 {
                     return "C";
@@ -177,10 +190,6 @@ namespace claid
                 {
                     return "Z";
                 }
-
-                
-
-                
 
             }
 

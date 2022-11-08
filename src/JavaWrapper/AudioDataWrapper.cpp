@@ -39,7 +39,7 @@ extern "C"
         Logger::printfln("Copying %d bytes of data to audio data", lengthOfArray);
         for(size_t i = 0; i < lengthOfArray; i++)
         {
-            audioData->data[i] = *reinterpret_cast<CLAID::byte*>(&(bufferPtr[i]));
+            audioData->data[i] = bufferPtr[i];
         }
 
         env->ReleaseByteArrayElements(data, bufferPtr, 0);

@@ -70,7 +70,7 @@ namespace claid
                 }
 
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, long>::value || std::is_same<T, unsigned long>::value, std::string>::type
+                static typename std::enable_if<(std::is_same<T, long>::value || std::is_same<T, unsigned long>::value) && !std::is_same<long, int64_t>::value, std::string>::type
                 getJavaClassNameOfPrimitiveType()
                 {
                     // Yes, it's "J", because "L" is used for clases.
@@ -146,7 +146,7 @@ namespace claid
 
                 // long CAN be 32 bit OR 64 bit (Windows vs Linux and Mac) -> https://en.cppreference.com/w/cpp/language/types
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, long>::value || std::is_same<T, unsigned long>::value, std::string>::type
+                static typename std::enable_if<(std::is_same<T, long>::value || std::is_same<T, unsigned long>::value) && !std::is_same<long, int64_t>::value, std::string>::type
                 getSignatureOfPrimitiveType()
                 {
                     // Yes, it's "J", because "L" is used for clases.

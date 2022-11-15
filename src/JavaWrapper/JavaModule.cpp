@@ -29,8 +29,12 @@ namespace claid
             args.version = JNI_VERSION_1_6; // choose your JNI version
             args.name = NULL; // you might want to give the java thread a name
             args.group = NULL; // you might want to assign the java thread to a ThreadGroup
-            this->javaVM->AttachCurrentThread((void**)&env, &args);
 
+            #ifdef __ANDROID__
+            this->javaVM->AttachCurrentThread(&env, &args);
+            #else
+            this->javaVM->AttachCurrentThread((void**)&env, &args);
+            #endif
             jclass cls = JNIUtils::getClassOfObject(env, javaObject);
             jmethodID mid =
                     env->GetMethodID(cls, "initialize", "()V");

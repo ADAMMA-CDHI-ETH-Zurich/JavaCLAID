@@ -47,6 +47,9 @@ namespace claid
 					jobject javaModuleObject;
 					JNIFactoryBase::newJavaObjectFromClassSignature(env, this->javaModuleClassName, javaModuleObject, "");
 					JavaModule* javaModule = new JavaModule(this->javaVM, javaModuleObject);
+
+					JNIHandle::setHandle(env, javaModuleObject, javaModule);
+
 					return javaModule;
 				}
 
@@ -54,9 +57,15 @@ namespace claid
 				{
 					JNIEnv* env;
 					int status = this->javaVM->GetEnv((void**)&env, JNI_VERSION_1_6);
-					if(status < 0) {    
+					if(status < 0) {
+						#ifdef __ANDROID__
+						status = this->javaVM->AttachCurrentThread(&env, NULL);
+                        #else
 						status = this->javaVM->AttachCurrentThread((void**)&env, NULL);
-						if(status < 0) {        
+						#endif
+
+
+						if(status < 0) {
 							return nullptr;
 						}
 					}

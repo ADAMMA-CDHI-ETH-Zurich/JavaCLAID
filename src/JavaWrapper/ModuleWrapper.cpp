@@ -13,16 +13,7 @@ extern "C"
 
 JNIEXPORT void JNICALL Java_JavaCLAID_Module_init(JNIEnv* env, jobject wrappedModule)
 {
-    JavaModule* module = new JavaModule(env, wrappedModule);
-    JNIHandle::setHandle(env, wrappedModule, module);
-    CLAID_RUNTIME->addModule(static_cast<Module*>(module));
 
-    Logger::printfln("New Java Module");
-    if(CLAID_RUNTIME->isRunning())
-    {
-      Logger::printfln("Init");
-      module->startModule();
-    }
 
 }
 

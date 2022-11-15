@@ -50,7 +50,7 @@ namespace claid
 
                 // long can be either 32 or 64 bit: https://en.cppreference.com/w/cpp/language/types
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, long>::value || std::is_same<T, unsigned long>::value, std::string>::type
+                static typename std::enable_if<(std::is_same<T, long>::value || std::is_same<T, unsigned long>::value) && !std::is_same<long, int64_t>::value, std::string>::type
                 getGetterFunctionNameUsedToRetrievePrimitiveFromJavaObject()
                 {
                     return "longValue";
@@ -128,7 +128,7 @@ namespace claid
                 }
 
                 template<typename T>
-                static typename std::enable_if<std::is_same<T, long>::value || std::is_same<T, unsigned long>::value, T>::type
+                static typename std::enable_if<(std::is_same<T, long>::value || std::is_same<T, unsigned long>::value) && !std::is_same<long, int64_t>::value, T>::type
                 callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
                 {
                     return env->CallLongMethod(object, methodID);
@@ -612,7 +612,11 @@ namespace claid
                     JNIEnv *env;
                     int status = jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
                     if(status < 0) {    
+                        #ifdef __ANDROID__
+                        status = jvm->AttachCurrentThread(&env, NULL);
+                        #else
                         status = jvm->AttachCurrentThread((void**)&env, NULL);
+                        #endif
                         if(status < 0) {        
                             return nullptr;
                         }

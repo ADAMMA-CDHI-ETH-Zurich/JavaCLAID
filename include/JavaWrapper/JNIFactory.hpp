@@ -42,7 +42,7 @@ namespace claid
 
         // For primitive / arithmetic types and byte
         template<typename T>
-        struct JNIFactory<T, typename std::enable_if<std::is_arithmetic<T>::value>::TYPE> : protected JNIFactoryBase
+        struct JNIFactory<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> : protected JNIFactoryBase
         {
             protected:
                 static jobject createJavaPrimitiveObjectFromNativePrimitive(JNIEnv* env, T& nativePrimitive)

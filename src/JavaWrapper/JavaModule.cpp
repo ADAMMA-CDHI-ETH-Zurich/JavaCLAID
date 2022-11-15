@@ -2,7 +2,7 @@
 #include "JavaWrapper/WrapperMaster.hpp"
 
 
-namespace portaible
+namespace claid
 {
     namespace JavaWrapper
     {
@@ -16,7 +16,11 @@ namespace portaible
             this->javaObject = env->NewGlobalRef(javaObject);
         }
 
-       
+        JavaModule::JavaModule(JavaVM* javaVM, jobject javaObject)
+        {
+            this->javaVM = javaVM;
+            this->javaObject = javaObject;
+        }
 
         void JavaModule::initialize()
         {
@@ -25,37 +29,42 @@ namespace portaible
             args.version = JNI_VERSION_1_6; // choose your JNI version
             args.name = NULL; // you might want to give the java thread a name
             args.group = NULL; // you might want to assign the java thread to a ThreadGroup
-            this->javaVM->AttachCurrentThread(&env, &args);
 
+            #ifdef __ANDROID__
+            this->javaVM->AttachCurrentThread(&env, &args);
+            #else
+            this->javaVM->AttachCurrentThread((void**)&env, &args);
+            #endif
+            jclass cls = JNIUtils::getClassOfObject(env, javaObject);
             jmethodID mid =
-                    env->GetMethodID(JNIUtils::getClassOfObject(env, javaObject), "initialize", "()V");
-            Logger::printfln("JavaModule 2");
+                    env->GetMethodID(cls, "initialize", "()V");
 
             if(mid == nullptr)
             {
-                portaible::Logger::printfln("NULL");
-                PORTAIBLE_THROW(Exception, "Error, function initialize with signature void () not found for class "
-                    << JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, javaObject)));
+                CLAID_THROW(Exception, "Error, function initialize with signature void () not found for class "
+                    << JNIUtils::getClassName(env, cls));
             }
             else
             {
-                                Logger::printfln("JavaModule 3");
-
                 // Return should be of type java class "Channel" (portaible.JavaWrappers.Channel)
                 env->CallVoidMethod(javaObject, mid);
 
             }
+            env->DeleteLocalRef(cls);
         }
 
         jobject JavaModule::publish(JNIEnv* env, jclass dataType, jstring channelID)
         {
+            // Assign wrapper if not done already:
+            WrapperMaster::getInstance()->assignWrapperToJavaClass(env, dataType);
+
             std::string className = JNIUtils::getClassName(env, dataType);
-            if(!WrapperMaster::getInstance()->isWrapperRegisteredForClass(className))
+            if(!WrapperMaster::getInstance()->isWrapperAssignedToJavaClass(className))
             {
-                PORTAIBLE_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
+                CLAID_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
             }
 
-            WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapper(className);
+            WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapperForJavaClass(className);
             jobject channel = wrapper->publish(env, this, channelID);
 
             return channel;
@@ -63,13 +72,16 @@ namespace portaible
 
         jobject JavaModule::subscribe(JNIEnv* env, jclass dataType, jstring channelID, jstring functionCallbackName, jstring functionSignature)
         {
+            // Assign wrapper if not done already:
+            WrapperMaster::getInstance()->assignWrapperToJavaClass(env, dataType);
+
             std::string className = JNIUtils::getClassName(env, dataType);
-            if(!WrapperMaster::getInstance()->isWrapperRegisteredForClass(className))
+            if(!WrapperMaster::getInstance()->isWrapperAssignedToJavaClass(className))
             {
-                PORTAIBLE_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
+                CLAID_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
             }
 
-            WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapper(className);
+            WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapperForJavaClass(className);
             jobject channel = wrapper->subscribe(env, this, channelID, functionCallbackName, functionSignature);
 
             return channel;
@@ -77,20 +89,22 @@ namespace portaible
 
         void JavaModule::callCallbackFunction(const std::string& functionName, jobject dataObject)
         {
-            
+            jclass cls = JNIUtils::getClassOfObject(env, javaObject);
             jmethodID mid =
-                    env->GetMethodID(JNIUtils::getClassOfObject(env, javaObject), functionName.c_str(), Signatures::Function::functionSignatureVoid({Signatures::Class::ChannelData}).c_str());
+                    env->GetMethodID(cls, functionName.c_str(), Signatures::Function::functionSignatureVoid({Signatures::Class::ChannelData}).c_str());
             
             if(mid == nullptr)
             {
-                portaible::Logger::printfln("NULL");
-                PORTAIBLE_THROW(Exception, "Error, could not call callback function. Function " << functionName << " with signature void " << Signatures::Class::ChannelData << " not found for class "
-                    << JNIUtils::getClassName(env, JNIUtils::getClassOfObject(env, javaObject)));
+                claid::Logger::printfln("NULL");
+                CLAID_THROW(Exception, "Error, could not call callback function. Function " << functionName << " with signature void " << Signatures::Class::ChannelData << " not found for class "
+                    << JNIUtils::getNameOfClassOfObject(env, dataObject));
             }
             else
             {
                 env->CallVoidMethod(javaObject, mid, dataObject);
             }
+
+            env->DeleteLocalRef(cls);
         }
     
 

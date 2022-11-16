@@ -19,7 +19,8 @@ namespace claid
         JavaModule::JavaModule(JavaVM* javaVM, jobject javaObject)
         {
             this->javaVM = javaVM;
-            this->javaObject = javaObject;
+            JNIEnv* env = JNIUtils::getEnv();
+            this->javaObject = env->NewGlobalRef(javaObject);
         }
 
         void JavaModule::initialize()
@@ -29,15 +30,21 @@ namespace claid
             args.version = JNI_VERSION_1_6; // choose your JNI version
             args.name = NULL; // you might want to give the java thread a name
             args.group = NULL; // you might want to assign the java thread to a ThreadGroup
+            Logger::printfln("JavaModule init 2");
 
             #ifdef __ANDROID__
             this->javaVM->AttachCurrentThread(&env, &args);
             #else
             this->javaVM->AttachCurrentThread((void**)&env, &args);
             #endif
+                                    Logger::printfln("JavaModule init 2.5");
+
             jclass cls = JNIUtils::getClassOfObject(env, javaObject);
+                        Logger::printfln("JavaModule init 3");
+
             jmethodID mid =
                     env->GetMethodID(cls, "initialize", "()V");
+            Logger::printfln("JavaModule init 4");
 
             if(mid == nullptr)
             {
@@ -50,6 +57,8 @@ namespace claid
                 env->CallVoidMethod(javaObject, mid);
 
             }
+                        Logger::printfln("JavaModule init 5");
+
             env->DeleteLocalRef(cls);
         }
 

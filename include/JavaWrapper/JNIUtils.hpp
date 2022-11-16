@@ -244,8 +244,18 @@ namespace claid
                     JNIUtils::jvm = javaVM;
                     JNIEnv* env = getEnv();
 
-                    // Just use any class.
-                    std::string className = "java/lang/Class";
+                    // Just use NON-SYSTEM class!!
+                    // **** !!!! READ COMMENTS OF STACK OVERFLOW ANSWER CAREFULLY !!!! ****
+                    /*
+                    
+                        "Also, for people are implementing this, be aware that the ClassLoader you extract (the one that knows about your classes) 
+                        does NOT know about certain Android classes like android.app.Activity. 
+                        So you really have to try both in any general-purpose findClass routine. 
+                        SIGH---could they make JNI any harder to use?" 
+                        (Quote from comments below the stackoverflow answer).
+
+                    */
+                    std::string className = "JavaCLAID/Channel";
                     auto randomClass = env->FindClass(className.c_str());
 
                     if(randomClass == nullptr)
@@ -276,6 +286,11 @@ namespace claid
                     env->CallStaticVoidMethod(systemClass, systemGCMethod);
                 }
 
+                // NOTE! According to https://stackoverflow.com/questions/12900695/how-to-obtain-jni-interface-pointer-jnienv-for-asynchronous-calls 
+                // the gClassLoader is able to find non-system classes when used in different native C++ threads (because when we obtained it, we 
+                // provided a non-system class aswell).
+                // It is, however, unable to find standard system classes (like java.lang.String).
+                // Read the comments of the Stackoverflow answer carefully!
                 static jclass findClass(JNIEnv* env, const char* name) 
                 {
                     if(!onLoadCalled)
@@ -287,8 +302,18 @@ namespace claid
 
 
                     jstring str = env->NewStringUTF(name);
-                    jclass cls = static_cast<jclass>(env->CallObjectMethod(gClassLoader, gFindClassMethod, str));
-                
+
+
+                    jclass cls;
+                    
+                    try{
+                        cls = static_cast<jclass>(env->CallObjectMethod(gClassLoader, gFindClassMethod, str));
+                        Logger::printfln("Class loaded successfully");
+                    }
+                    catch(std::exception& e)
+                    {
+                        Logger::printfln("EXCEPTION");
+                    }
                     env->DeleteLocalRef(str);
 
                     if(cls == nullptr)

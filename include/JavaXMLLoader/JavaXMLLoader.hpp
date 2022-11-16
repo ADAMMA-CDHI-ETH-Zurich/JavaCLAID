@@ -41,7 +41,7 @@ namespace claid
 					}   
 						
 					className = Signatures::Class::classNameToSignature(className);
-
+					Logger::printfln("Trying to load Module %s", className.c_str());
 					JavaModuleFactory factory(className, jvm);
 					JavaModule* javaModule = factory.getInstance();
 					

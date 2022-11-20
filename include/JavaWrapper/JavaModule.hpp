@@ -37,10 +37,15 @@ namespace claid
 
                 JNIEnv* getEnv();
 
+
+                virtual const std::string getModuleName();    
+
             private:
                 JNIEnv* env;
                 jobject javaObject;
                 JavaVM* javaVM;
+
+                std::string moduleName;
 
         };
     }

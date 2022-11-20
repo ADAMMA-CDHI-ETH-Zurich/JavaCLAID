@@ -104,10 +104,7 @@ namespace claid
                 static typename std::enable_if<std::is_same<T, signed char>::value || std::is_same<T, unsigned char>::value, T>::type
                 callPrimitiveMethod(JNIEnv* env, jobject& object, jmethodID methodID)
                 {
-                    // Force conversion to byte.
-                    // byte is defined as "enum class : signed char".
-                    // jbyte is defined as typedef signed char jbyte aswell.
-                    // Thus, we can force the cast by reinterpreting the memory address, even though the compiler would complain.
+
                     jbyte jByte = env->CallByteMethod(object, methodID);
                 
                     return jByte;

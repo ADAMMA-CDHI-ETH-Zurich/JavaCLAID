@@ -14,6 +14,7 @@ namespace claid
             // Thus, we need to get another env in initialize function.
             env->GetJavaVM(&this->javaVM);
             this->javaObject = env->NewGlobalRef(javaObject);
+            this->moduleName = JNIUtils::getNameOfClassOfObject(env, javaObject);
         }
 
         JavaModule::JavaModule(JavaVM* javaVM, jobject javaObject)
@@ -21,6 +22,7 @@ namespace claid
             this->javaVM = javaVM;
             JNIEnv* env = JNIUtils::getEnv();
             this->javaObject = env->NewGlobalRef(javaObject);
+            this->moduleName = JNIUtils::getNameOfClassOfObject(env, javaObject);
         }
 
         void JavaModule::initialize()
@@ -120,6 +122,11 @@ namespace claid
         JNIEnv* JavaModule::getEnv()
         {
             return env;
+        }
+
+        const std::string JavaModule::getModuleName()
+        {
+            return this->moduleName;
         }
 
 

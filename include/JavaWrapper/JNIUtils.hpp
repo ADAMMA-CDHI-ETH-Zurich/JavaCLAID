@@ -305,7 +305,7 @@ namespace claid
                     
                     try{
                         cls = static_cast<jclass>(env->CallObjectMethod(gClassLoader, gFindClassMethod, str));
-                        Logger::printfln("Class loaded successfully");
+                        Logger::printfln("Class loaded successfully %u", cls);
                     }
                     catch(std::exception& e)
                     {
@@ -316,6 +316,7 @@ namespace claid
                     if(cls == nullptr)
                     {
                         // If failed, try conventional method.
+                        Logger::printfln("Trying conventional method");
                         env->ExceptionClear();
                         cls = env->FindClass(name);
                     }

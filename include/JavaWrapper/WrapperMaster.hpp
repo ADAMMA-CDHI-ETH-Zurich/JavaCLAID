@@ -79,9 +79,7 @@ namespace claid
 
                 void assignWrapperToJavaClassByName(std::string javaClassName, std::string cppClassName)
                 {
-                    Logger::printfln("1\n");
                     auto it = this->javaCppClassNamesMap.find(javaClassName);
-                    Logger::printfln("2\n");
 
                     if(it != javaCppClassNamesMap.end())
                     {
@@ -99,7 +97,6 @@ namespace claid
                             return ;
                         }   
                     }
-                                        Logger::printfln("3\n");
 
                     auto it2 = this->registeredWrappers.find(cppClassName);
 

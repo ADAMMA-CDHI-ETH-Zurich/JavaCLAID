@@ -21,9 +21,13 @@ namespace claid
                 }
 
                 void initialize();
+                void postInitialize();
               
                 jobject publish(JNIEnv* env, jclass dataType, jstring channelID);
                 jobject subscribe(JNIEnv* env, jclass dataType, jstring channelID, jstring functionCallbackName, jstring functionSignature);
+                
+                void registerPeriodicFunction(JNIEnv* env, jstring identifier, jstring functionName, jint periodInMilliseconds);
+                void unregisterPeriodicFunction(JNIEnv* env, jstring identifier);
 
                 template<typename T>
                 ChannelSubscriber<T> makeSubscriber(std::function<void (ChannelData<T>)> function)
@@ -46,6 +50,8 @@ namespace claid
                 JavaVM* javaVM;
 
                 std::string moduleName;
+
+                void invokeJavaPeriodicFunction(std::string functionName);
 
         };
     }

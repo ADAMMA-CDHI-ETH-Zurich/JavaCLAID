@@ -39,7 +39,7 @@ namespace claid
             #else
             this->javaVM->AttachCurrentThread((void**)&env, &args);
             #endif
-                                    Logger::printfln("JavaModule init 2.5");
+            Logger::printfln("JavaModule init 2.5");
 
             jclass cls = JNIUtils::getClassOfObject(env, javaObject);
                         Logger::printfln("JavaModule init 3");
@@ -50,8 +50,8 @@ namespace claid
 
             if(mid == nullptr)
             {
-                CLAID_THROW(Exception, "Error, function initialize with signature void () not found for class "
-                    << JNIUtils::getClassName(env, cls));
+                // CLAID_THROW(Exception, "Error, function initialize with signature void () not found for class "
+                //     << JNIUtils::getClassName(env, cls));
             }
             else
             {
@@ -59,7 +59,29 @@ namespace claid
                 env->CallVoidMethod(javaObject, mid);
 
             }
-                        Logger::printfln("JavaModule init 5");
+
+
+            env->DeleteLocalRef(cls);
+        }
+
+        void JavaModule::postInitialize()
+        {
+            jclass cls = JNIUtils::getClassOfObject(env, javaObject);
+
+            jmethodID mid =
+                    env->GetMethodID(cls, "postInitialize", "()V");
+
+            if(mid == nullptr)
+            {
+                // CLAID_THROW(Exception, "Error, function initialize with signature void () not found for class "
+                //     << JNIUtils::getClassName(env, cls));
+            }
+            else
+            {
+                // Return should be of type java class "Channel" (portaible.JavaWrappers.Channel)
+                env->CallVoidMethod(javaObject, mid);
+
+            }
 
             env->DeleteLocalRef(cls);
         }
@@ -118,6 +140,39 @@ namespace claid
             env->DeleteLocalRef(cls);
         }
     
+        void JavaModule::registerPeriodicFunction(JNIEnv* env, jstring identifier, jstring functionName, jint periodInMilliseconds)
+        {
+            std::string stdIdentifier = JNIUtils::toStdString(env, identifier);
+            std::string stdFunctionName = JNIUtils::toStdString(env, functionName);
+
+            std::function<void()> function = std::bind(&JavaModule::invokeJavaPeriodicFunction, this, stdFunctionName);
+            Module::registerPeriodicFunction(stdIdentifier, function, static_cast<size_t>(periodInMilliseconds));
+        }
+
+        void JavaModule::unregisterPeriodicFunction(JNIEnv* env, jstring identifier)
+        {
+            std::string stdIdentifier = JNIUtils::toStdString(env, identifier);
+            Module::unregisterPeriodicFunction(stdIdentifier);
+        }
+
+        void JavaModule::invokeJavaPeriodicFunction(std::string functionName)
+        {
+            jclass cls = JNIUtils::getClassOfObject(env, javaObject);
+            jmethodID mid =
+                    env->GetMethodID(cls, functionName.c_str(), Signatures::Function::functionSignatureVoid({/* No parameter, hence empty vector */}).c_str());
+            
+            if(mid == nullptr)
+            {
+                CLAID_THROW(Exception, "Error, registered periodic function could not be called. Function \"" << functionName << "\" with signature void () not found for class "
+                    << JNIUtils::getClassName(env, cls));
+            }
+            else
+            {
+                env->CallVoidMethod(javaObject, mid);
+            }
+
+            env->DeleteLocalRef(cls);
+        }
 
         JNIEnv* JavaModule::getEnv()
         {

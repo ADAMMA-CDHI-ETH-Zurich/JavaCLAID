@@ -1,7 +1,7 @@
 #pragma once
 #include "RunTime/RunTime.hpp"
 
-#include "JavaWrapper/JNIUtils.hpp"
+#include "jbind11/JNIUtils/JNIUtils.hpp"
 
 namespace claid
 {

@@ -1,5 +1,5 @@
 #pragma once
-#include "JNIUtils.hpp"
+#include "jbind11/JNIUtils/JNIUtils.hpp"
 
 namespace claid
 {
@@ -19,7 +19,7 @@ namespace claid
                 // Why use custom findClass?
                 // See https://stackoverflow.com/questions/13263340/findclass-from-any-thread-in-android-jni/16302771#16302771
 
-                jclass cls = JNIUtils::findClass(env, className.c_str());
+                jclass cls = jbind11::ClassLoader::findClass(env, className.c_str());
 
                 if(cls == nullptr)
                 {

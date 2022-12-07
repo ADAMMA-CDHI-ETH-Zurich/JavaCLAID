@@ -127,6 +127,17 @@ namespace claid
                     return this->javaCppClassNamesMap;
                 }
 
+                void getRegisteredWrapperClasses(std::vector<std::string>& classNames) const
+                {
+                    classNames.clear();
+
+                    for(const auto value : this->registeredWrappers)
+                    {
+                        classNames.push_back(value.first);
+                    }
+
+                }
+
                 
         };
 

@@ -2,6 +2,9 @@
 #include "RunTime/RunTime.hpp"
 
 #include "jbind11/JNIUtils/JNIUtils.hpp"
+#include "ChannelWrapper.hpp"
+
+namespace java = jbind11;
 
 namespace claid
 {
@@ -9,10 +12,16 @@ namespace claid
     {
         class JavaModule : public Module
         {
+            private:
+
 
             public:
-                JavaModule(JNIEnv* env, jobject javaObject);
-                JavaModule(JavaVM* javaVM, jobject javaObject);
+            
+
+                JavaModule()
+                {
+                    
+                }
 
                 template<typename Reflector>
                 void reflect(Reflector& r)
@@ -20,14 +29,23 @@ namespace claid
 
                 }
 
+                static void addToJbindPackage(java::JavaPackage& p)
+                {
+                    java::JavaClass<JavaModule> cls(p, "Module");
+
+                    cls.def("publish", &JavaModule::publish);
+                    cls.def("subscribe", &JavaModule::subscribe);
+                    cls.def("registerPeriodicFunction", &JavaModule::registerPeriodicFunction);
+                }
+
                 void initialize();
                 void postInitialize();
               
-                jobject publish(JNIEnv* env, jclass dataType, jstring channelID);
-                jobject subscribe(JNIEnv* env, jclass dataType, jstring channelID, jstring functionCallbackName, jstring functionSignature);
+                ChannelWrapper publish(jclass dataType, jstring channelID);
+                ChannelWrapper subscribe(jclass dataType, jstring channelID, jstring functionCallbackName, jstring functionSignature);
                 
-                void registerPeriodicFunction(JNIEnv* env, jstring identifier, jstring functionName, jint periodInMilliseconds);
-                void unregisterPeriodicFunction(JNIEnv* env, jstring identifier);
+                void registerPeriodicFunction(std::string identifier, std::string functionName, int32_t periodInMilliseconds);
+                void unregisterPeriodicFunction(jstring identifier);
 
                 template<typename T>
                 ChannelSubscriber<T> makeSubscriber(std::function<void (ChannelData<T>)> function)
@@ -45,9 +63,6 @@ namespace claid
                 virtual const std::string getModuleName();    
 
             private:
-                JNIEnv* env;
-                jobject javaObject;
-                JavaVM* javaVM;
 
                 std::string moduleName;
 

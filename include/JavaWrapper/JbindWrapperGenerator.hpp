@@ -16,7 +16,7 @@ namespace claid
             
             public:
 
-                typedef JavaClass<Class> JClass;
+                typedef java::JavaClass<Class> JClass;
 
                 template<typename T>
                 void member(const char*, T& member, std::string comment)

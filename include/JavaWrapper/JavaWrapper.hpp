@@ -16,7 +16,7 @@ namespace claid
     namespace JavaWrapper
     {
         // The JavaWrapper combines two functionalities:
-        //      1st It may be used as reflector. Then, it creates a java class (using jbind) for the the type it is applied on.
+        //      1st It may be used as reflector. Then, it creates a java class (using jbind11) for the the type it is applied on.
         // 
         //      2nd Additionally, it provides additional functions for the class, which are not added to the created Java class (created in 1st), like publish and subscribe.
         //      They can not be used from the corresponding Java object directly, as they were not added to the wrapper with jbind. 
@@ -43,12 +43,12 @@ namespace claid
                 template<typename JavaModule>
                 jobject subscribeHelper(JavaModule* module, jstring channelID, jstring callbackFunctionName) 
                 {
-                    std::string stdChannelID = java::fromJavaObject<std::string>(java::JNIUtils::getEnv(), channelID);
+                    std::string stdChannelID = java::fromJavaObject<std::string>(channelID);
                     std::shared_ptr<Channel<Class>> channel(new Channel<Class>);
                
 
                     std::function<void (ChannelData<Class>)> callbackFunction = 
-                        std::bind(&JavaWrapper::onData, this, module, java::fromJavaObject(java::JNIUtils::getEnv(), callbackFunctionName), std::placeholders::_1);
+                        std::bind(&JavaWrapper::onData, this, module, java::fromJavaObject<std::string>(callbackFunctionName), std::placeholders::_1);
 
                     *channel = 
                         CLAID_RUNTIME->channelManager.subscribe<Class>(stdChannelID, module->makeSubscriber(callbackFunction), module->getUniqueIdentifier());
@@ -59,32 +59,31 @@ namespace claid
                     ChannelWrapper channelWrapper(stdChannelID, this->className, std::static_pointer_cast<void>(channel));
                     printf("Subscribed to channel %s", stdChannelID.c_str());
 
-                    jobject channelObject = java::cast(java::JNIUtils::getEnv(), channelWrapper);
+                    jobject channelObject = java::cast(channelWrapper);
                     return channelObject;
                 }
 
                 template<typename JavaModule>
                 jobject publishHelper(JavaModule* module, jstring channelID) 
                 {
-                    std::string stdChannelID = java::fromJavaObject<std::string>(java::JNIUtils::getEnv(), channelID);
+                    std::string stdChannelID = java::fromJavaObject<std::string>(channelID);
                     std::shared_ptr<Channel<Class>> channel(new Channel<Class>);
             
                     *channel = 
                         CLAID_RUNTIME->channelManager.publish<Class>(stdChannelID, module->getUniqueIdentifier());
-                
                   
-                    ChannelWrapper channelWrapper(channelID, this->className, std::static_pointer_cast<void>(channel));
-                    jobject channelObject = java::cast(java::JNIUtils::getEnv(), channelWrapper);
+                    ChannelWrapper channelWrapper(java::fromJavaObject<std::string>(channelID), this->className, std::static_pointer_cast<void>(channel));
+                    jobject channelObject = java::cast(channelWrapper);
                     return channelObject;
                 }
 
                 template<typename JavaModule>
                 void onDataHelper(JavaModule* module, std::string callbackFunctionName, ChannelData<Class> channelData)
                 {
-                    Class* dataCopy = new Class(channelData->value());                   
-                    jobject javaData = java::cast(dataCopy); 
-                    module->callCallbackFunction(callbackFunctionName, javaData);
-                    delete dataCopy;
+                    // Class* dataCopy = new Class(channelData->value());                   
+                    // jobject javaData = java::cast(dataCopy); 
+                    // module->callCallbackFunction(callbackFunctionName, javaData);
+                    // delete dataCopy;
                 }
 
             public:
@@ -114,7 +113,7 @@ namespace claid
                 {
                     std::shared_ptr<Channel<Class>> channel = std::static_pointer_cast<Channel<Class>>(channelReference);
 
-                    Class* obj = java::fromJavaObject<Class*>(java::JNIUtils::getEnv(), data);
+                    Class* obj = java::fromJavaObject<Class*>(data);
 
                     channel->post(*obj);
                 }

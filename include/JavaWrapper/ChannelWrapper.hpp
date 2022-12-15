@@ -47,12 +47,10 @@ namespace claid
                 //     reflectFunction(post);
                 // )
 
-                static void addToPybindModule(jbind11::JavaPackage& package)
+                static void addToJbindPackage(jbind11::JavaPackage& package)
                 {
                     java::JavaClass<ChannelWrapper> javaClass(package, "Channel");
 
-                    // No init function. A Channel should not be creatable from within Python, only should be retrievable using publish and subscribe functions.
-                    //pyClass.def(py::init<>());
                     javaClass.def("post", &ChannelWrapper::post);
                 //  pyClass.def("publish", &PythonModule::publish);
                 }
@@ -77,7 +75,7 @@ namespace claid
                         "It is of an unsupported type \"" << typeName << "\", as no CLAID JavaWrapper is available for the type. Please proivide a CLAID JavaWrapper using DECLARE_SERIALIZATION and REGISTER_SERIALIZATION (C++) for this type.");
                     }
 
-                    std::string dataTypeWrapperName = java::fromJavaObject<std::string>(java::JNIUtils::getEnv(), java::attr(data, "__CPP_CLASS_NAME__"));
+                    std::string dataTypeWrapperName = java::fromJavaObject<std::string>(java::attr(data, "__CPP_CLASS_NAME__"));
 
                     if(dataTypeWrapperName != this->wrapperNameOfDataTypeOfChannel)
                     {

@@ -4,6 +4,8 @@
 #include "RunTime/RunTime.hpp"
 #include "XML/XMLDeserializer.hpp"
 #include "JavaWrapper/JavaModuleFactory.hpp"
+#include "JavaWrapper/Signatures.hpp"
+
 namespace claid
 {
 	namespace JavaWrapper
@@ -22,12 +24,7 @@ namespace claid
 				{
 					// node already has tag <JavaModule>
 					
-					JavaVM* jvm = JNIUtils::getJavaVM();
 
-					if(jvm == nullptr)
-					{
-						CLAID_THROW(claid::Exception, "Error, failed to load JavaModule from XML file. Unable to get JavaVM. Was JNIUtils::onLoad() called in JNI_OnLoad?");
-					}
 
 					std::string className;
 					if (!node->getAttribute("class", className))
@@ -42,16 +39,22 @@ namespace claid
 						
 					className = Signatures::Class::classNameToSignature(className);
 					Logger::printfln("Trying to load Module %s", className.c_str());
-					JavaModuleFactory factory(className, jvm);
+					JavaModuleFactory factory(className);
+					printf("Module 0!\n");
+
 					JavaModule* javaModule = factory.getInstance();
-					
-					XMLDeserializer deserializer(node);
-					deserializer.deserializeFromNode("JavaModule", *javaModule);
-					std::string id;
-					if (node->getAttribute("id", id))
-					{
-						javaModule->setID(id);
-					}
+					printf("Module instantiated!\n");
+
+			// 		XMLDeserializer deserializer(node);
+			// 		deserializer.deserializeFromNode("JavaModule", *javaModule);
+			// 		std::string id;
+			// 		if (node->getAttribute("id", id))
+			// 		{
+			// 			javaModule->setID(id);
+			// 		}
+			// 		printf("Module instantiated 3!\n");
+            // std::cout << std::flush;
+
 
 					return javaModule;
 				}

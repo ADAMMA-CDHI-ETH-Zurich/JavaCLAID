@@ -44,48 +44,51 @@ namespace claid
                 // of our functions, we get "accessing member of incomplete type", or sth like this... Using the templated helper functions solves this,
                 // as it forces the compiler to fully resolve the types and later implement the templated functions.. It's a fun game we're playing!
                 template<typename JavaModule>
-                jobject subscribeHelper(JavaModule* module, jstring channelID, jstring callbackFunctionName) 
+                ChannelWrapper subscribeHelper(JavaModule* module, std::string channelID, std::string callbackFunctionName) 
                 {
-                    std::string stdChannelID = java::fromJavaObject<std::string>(channelID);
                     std::shared_ptr<Channel<Class>> channel(new Channel<Class>);
                
 
                     std::function<void (ChannelData<Class>)> callbackFunction = 
-                        std::bind(&JavaWrapper::onData, this, module, java::fromJavaObject<std::string>(callbackFunctionName), std::placeholders::_1);
+                        std::bind(&JavaWrapper::onData, this, module, callbackFunctionName, std::placeholders::_1);
 
                     *channel = 
-                        CLAID_RUNTIME->channelManager.subscribe<Class>(stdChannelID, module->makeSubscriber(callbackFunction), module->getUniqueIdentifier());
+                        CLAID_RUNTIME->channelManager.subscribe<Class>(channelID, module->makeSubscriber(callbackFunction), module->getUniqueIdentifier());
                     
                     // the claid::JavaWrapper::ChannelWrapper is available in JavaCLAID package, thus can be casted to 
                     // a java object automatically.
                  
-                    ChannelWrapper channelWrapper(stdChannelID, this->fullyQualifiedClassName, std::static_pointer_cast<void>(channel));
-                    printf("Subscribed to channel %s", stdChannelID.c_str());
+                    ChannelWrapper channelWrapper(channelID, this->fullyQualifiedClassName, std::static_pointer_cast<void>(channel));
+                    printf("Subscribed to channel %s", channelID.c_str());
 
-                    jobject channelObject = java::cast(channelWrapper);
-                    return channelObject;
+                    return channelWrapper;
                 }
 
                 template<typename JavaModule>
-                ChannelWrapper publishHelper(JavaModule* module, jstring channelID) 
+                ChannelWrapper publishHelper(JavaModule* module, std::string channelID) 
                 {
-                    std::string stdChannelID = java::fromJavaObject<std::string>(channelID);
                     std::shared_ptr<Channel<Class>> channel(new Channel<Class>);
             
                     *channel = 
-                        CLAID_RUNTIME->channelManager.publish<Class>(stdChannelID, module->getUniqueIdentifier());
+                        CLAID_RUNTIME->channelManager.publish<Class>(channelID, module->getUniqueIdentifier());
                   
-                    ChannelWrapper channelWrapper(java::fromJavaObject<std::string>(channelID), this->fullyQualifiedClassName, std::static_pointer_cast<void>(channel));
+                    ChannelWrapper channelWrapper(channelID, this->fullyQualifiedClassName, std::static_pointer_cast<void>(channel));
                     return channelWrapper;
                 }
 
                 template<typename JavaModule>
                 void onDataHelper(JavaModule* module, std::string callbackFunctionName, ChannelData<Class> channelData)
                 {
-                    // Class* dataCopy = new Class(channelData->value());                   
-                    // jobject javaData = java::cast(dataCopy); 
-                    // module->callCallbackFunction(callbackFunctionName, javaData);
-                    // delete dataCopy;
+                    Class* dataCopy = new Class(channelData->value());        
+
+                    // TODO: Allow jbind11 to take ownership, then we dont need to delete this.
+                    // Otherwise, this currently requires 2 copy operations
+                    // (from channelData to dataCopy and then to javaData).           
+                    jobject javaData = java::cast(*dataCopy); 
+                    module->callCallbackFunction(callbackFunctionName, javaData);
+                    java::JNIUtils::getEnv()->DeleteLocalRef(javaData);
+                    
+                    delete dataCopy;
                 }
 
                 std::string getNameFromFullyQualifiedName(const std::string& fqName)
@@ -127,12 +130,12 @@ namespace claid
                     this->wrapperGenerator->generate(package, className);
                 }
 
-                jobject subscribe(JavaModule* module, jstring channelID, jstring callbackFunctionName) 
+                ChannelWrapper subscribe(JavaModule* module, std::string channelID, std::string callbackFunctionName) 
                 {
                     return subscribeHelper(module, channelID, callbackFunctionName);
                 }
 
-                virtual ChannelWrapper publish(JavaModule* module, jstring channelID)
+                virtual ChannelWrapper publish(JavaModule* module, std::string channelID)
                 {
                     return publishHelper(module, channelID);
                 }

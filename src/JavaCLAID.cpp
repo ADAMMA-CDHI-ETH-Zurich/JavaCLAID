@@ -6,6 +6,7 @@
 namespace java = jbind11;
 
 #include "CLAID.hpp"
+#include "JavaWrapper/ChannelDataWrapper.hpp"
 
 using namespace claid;
 using namespace claid::JavaWrapper;
@@ -51,4 +52,5 @@ JBIND11_PACKAGE(JavaCLAID, p)
 
     JavaModule::addToJbindPackage(p);
     ChannelWrapper::addToJbindPackage(p);
+    ChannelDataWrapper::addToJbindPackage(p);
 }

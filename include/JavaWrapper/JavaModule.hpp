@@ -41,8 +41,8 @@ namespace claid
                 void initialize();
                 void postInitialize();
               
-                ChannelWrapper publish(jclass dataType, jstring channelID);
-                ChannelWrapper subscribe(jclass dataType, jstring channelID, jstring functionCallbackName, jstring functionSignature);
+                ChannelWrapper publish(jclass dataType, std::string channelID);
+                ChannelWrapper subscribe(jclass dataType, std::string channelID, std::string functionCallbackName);
                 
                 void registerPeriodicFunction(std::string identifier, std::string functionName, int32_t periodInMilliseconds);
                 void unregisterPeriodicFunction(jstring identifier);

@@ -21,8 +21,8 @@ namespace claid
 
                 // Why data type not specified here? Well, it's the wrapper already
                 // JavaWrapper<T> already knows the data type. The crucial part is looking up the correct wrapper in Python::Module.
-                virtual jobject subscribe(JavaModule* module, jstring channelID, jstring callbackFunctionName) = 0;
-                virtual ChannelWrapper publish(JavaModule* module, jstring channelID) = 0;
+                virtual ChannelWrapper subscribe(JavaModule* module, std::string channelID, std::string callbackFunctionName) = 0;
+                virtual ChannelWrapper publish(JavaModule* module, std::string channelID) = 0;
                 
                 virtual void post(std::shared_ptr<void> channelReference, jobject data) = 0;
                

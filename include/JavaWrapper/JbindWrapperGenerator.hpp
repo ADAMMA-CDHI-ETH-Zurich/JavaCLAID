@@ -12,8 +12,8 @@ namespace claid
         template<typename Class>
         class JbindWrapperGenerator : public JbindWrapperGeneratorBase // No need to inherit from Deserializer or Serializer? Probably not, as we only care about static members.
         {
-               
-            
+
+          
             public:
 
                 typedef java::JavaClass<Class> JClass;
@@ -101,7 +101,7 @@ namespace claid
                         this->initJavaClassIfNecessary();
                     }
 
-                    this->cls->attr("__CPP_CLASS_NAME__") = className;
+                   // this->cls->attr("__CPP_CLASS_NAME__") = className;
 
                     if(cls == nullptr)
                     {

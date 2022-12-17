@@ -5,16 +5,25 @@ namespace claid
     namespace JavaWrapper
     {
    
-
         bool JavaWrapperMaster::isWrapperRegisteredForNativeClass(const std::string& cppClassName)
         {
-            std::string name_replaced = cppClassName; 
-            claid::stringReplaceAll(name_replaced, "::", "_");
-            auto it = this->registeredWrappers.find(name_replaced);
+            auto it = this->registeredWrappers.find(cppClassName);
             return it != this->registeredWrappers.end();
         }
 
-        JavaWrapperBase* JavaWrapperMaster::getWrapperForNativeClass(std::string className)
+        bool JavaWrapperMaster::isWrapperRegisteredForJavaClass(const std::string& canonicalClassName)
+        {
+            for(auto& entry : this->registeredWrappers)
+            {
+                if(entry.second->getCanonicalJavaClassName() == canonicalClassName)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        JavaWrapperBase* JavaWrapperMaster::getWrapperForNativeClass(const std::string& className)
         {
             auto it = this->registeredWrappers.find(className);
 
@@ -24,6 +33,19 @@ namespace claid
             }
 
             return it->second;
+        }
+
+
+        JavaWrapperBase* JavaWrapperMaster::getWrapperForJavaClass(const std::string& canonicalClassName)
+        {
+            for(auto& entry : this->registeredWrappers)
+            {
+                if(entry.second->getCanonicalJavaClassName() == canonicalClassName)
+                {
+                    return entry.second;
+                }
+            }
+            return nullptr;
         }
 
         void JavaWrapperMaster::getRegisteredWrapperClasses(std::vector<std::string>& wrappers)

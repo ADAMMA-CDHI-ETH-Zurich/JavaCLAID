@@ -29,10 +29,13 @@ namespace claid
         class JavaWrapper : public JavaWrapperBase
         {   
             private:
-                std::string className;
+                // C++ class name
+                std::string fullyQualifiedClassName;
+
+                // Java class name of the generated java class.
+                std::string canonicalJavaClassName = "";
                
                 bool staticMemberRegisted = false;
-
 
                 // Template trick to solve cyclic dependancies yet again ! Whoop whoop.
                 // Problem was that there is a cycle dependency between Java, JavaWrapperBase and Serializations (as usual)
@@ -56,7 +59,7 @@ namespace claid
                     // the claid::JavaWrapper::ChannelWrapper is available in JavaCLAID package, thus can be casted to 
                     // a java object automatically.
                  
-                    ChannelWrapper channelWrapper(stdChannelID, this->className, std::static_pointer_cast<void>(channel));
+                    ChannelWrapper channelWrapper(stdChannelID, this->fullyQualifiedClassName, std::static_pointer_cast<void>(channel));
                     printf("Subscribed to channel %s", stdChannelID.c_str());
 
                     jobject channelObject = java::cast(channelWrapper);
@@ -64,7 +67,7 @@ namespace claid
                 }
 
                 template<typename JavaModule>
-                jobject publishHelper(JavaModule* module, jstring channelID) 
+                ChannelWrapper publishHelper(JavaModule* module, jstring channelID) 
                 {
                     std::string stdChannelID = java::fromJavaObject<std::string>(channelID);
                     std::shared_ptr<Channel<Class>> channel(new Channel<Class>);
@@ -72,9 +75,8 @@ namespace claid
                     *channel = 
                         CLAID_RUNTIME->channelManager.publish<Class>(stdChannelID, module->getUniqueIdentifier());
                   
-                    ChannelWrapper channelWrapper(java::fromJavaObject<std::string>(channelID), this->className, std::static_pointer_cast<void>(channel));
-                    jobject channelObject = java::cast(channelWrapper);
-                    return channelObject;
+                    ChannelWrapper channelWrapper(java::fromJavaObject<std::string>(channelID), this->fullyQualifiedClassName, std::static_pointer_cast<void>(channel));
+                    return channelWrapper;
                 }
 
                 template<typename JavaModule>
@@ -86,9 +88,32 @@ namespace claid
                     // delete dataCopy;
                 }
 
+                std::string getNameFromFullyQualifiedName(const std::string& fqName)
+                {
+                    if(fqName == "")
+                    {
+                        return "";
+                    }
+
+                    std::string::size_type charIndex = fqName.size() - 1;
+
+                    while(charIndex >= 0)
+                    {
+                        if(fqName[charIndex] == ':')
+                        {
+                            return fqName.substr(charIndex + 1, fqName.size());
+                        }
+                        charIndex--;
+                    }
+
+                    // No namespace found, hence return the full name.
+                    return fqName;                    
+                }   
+
+
             public:
             
-                JavaWrapper(std::string className) : className(className)
+                JavaWrapper(std::string fullyQualifiedClassName) : fullyQualifiedClassName(fullyQualifiedClassName)
                 {
                     // Register default generator (can be overriden later).
                     this->overrideJbindWrapperGenerator(new JbindWrapperGenerator<Class>());
@@ -96,7 +121,10 @@ namespace claid
 
                 virtual void generateWrapper(java::JavaPackage& package)
                 {
-                    this->wrapperGenerator->generate(package, this->className);
+                    std::string className = getNameFromFullyQualifiedName(this->fullyQualifiedClassName);
+                    this->canonicalJavaClassName = package.getPackageName() + std::string(".") + className;
+
+                    this->wrapperGenerator->generate(package, className);
                 }
 
                 jobject subscribe(JavaModule* module, jstring channelID, jstring callbackFunctionName) 
@@ -104,7 +132,7 @@ namespace claid
                     return subscribeHelper(module, channelID, callbackFunctionName);
                 }
 
-                virtual jobject publish(JavaModule* module, jstring channelID)
+                virtual ChannelWrapper publish(JavaModule* module, jstring channelID)
                 {
                     return publishHelper(module, channelID);
                 }
@@ -126,6 +154,15 @@ namespace claid
                     printf("back\n");
                 }
 
+                const std::string& getFullyQualifiedCppClassName() const
+                {
+                    return this->fullyQualifiedClassName;
+                }
+
+                const std::string& getCanonicalJavaClassName() const
+                {
+                    return this->canonicalJavaClassName;
+                }
             
         };
 

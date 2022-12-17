@@ -13,7 +13,7 @@ namespace claid
     {
         class JavaWrapperMaster : public Singleton<JavaWrapperMaster>
         {
-            // string is the C++ class name
+            // string is the C++ class name (fully qualified name).
             std::map<std::string, JavaWrapperBase*> registeredWrappers;
 
 
@@ -33,7 +33,11 @@ namespace claid
                 }  
 
                 bool isWrapperRegisteredForNativeClass(const std::string& cppClassName);
-                JavaWrapperBase* getWrapperForNativeClass(std::string className);
+                bool isWrapperRegisteredForJavaClass(const std::string& canonicalClassName);
+
+                JavaWrapperBase* getWrapperForNativeClass(const std::string& className);
+                JavaWrapperBase* getWrapperForJavaClass(const std::string& className);
+                
                 void getRegisteredWrapperClasses(std::vector<std::string>& wrappers);              
         };
 
@@ -44,9 +48,7 @@ namespace claid
 			public:
 				RegisterHelper(std::string name) 
 				{
-                    std::string name_replaced = name; 
-                    claid::stringReplaceAll(name_replaced, "::", "_");
-					JavaWrapperMaster::getInstance()->registerWrapper<Class>(name_replaced);
+					JavaWrapperMaster::getInstance()->registerWrapper<Class>(name);
 				}
 		};
     }

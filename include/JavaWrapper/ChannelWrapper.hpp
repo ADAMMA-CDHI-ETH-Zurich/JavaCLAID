@@ -61,21 +61,23 @@ namespace claid
                     if(!JavaWrapperMaster::getInstance()->isWrapperRegisteredForNativeClass(this->wrapperNameOfDataTypeOfChannel))
                     {
                         // Check primitive types..
-                        CLAID_THROW(Exception, "Error, a JavaModule tried to post data to channel with ID \"" << channelID << "\", but a wrapper for the type of data "
-                        << "of the channel was not found. This should not happen, as the channel previously was registered using such a wrapper, thus there HAS to be a wrapper available. "
+                        CLAID_THROW(Exception, "Error, a JavaModule tried to post data to channel with ID \"" << channelID << "\", but a wrapper for the type of data \n"
+                        << "(\"" << this->wrapperNameOfDataTypeOfChannel << "\") of the channel was not found.\n"
+                        << "This should not happen, as the channel previously was registered using such a wrapper, thus there HAS to be a wrapper available.\n"
                         << "This must a serious bug or linker problem. Did you load CLAID as a dynamic library *privately* or forgot to provide the correct flags for the linker to support global symbol lookup?");
                     }
 
+                    std::string javaClassName = java::JNIUtils::getNameOfClassOfObject(java::JNIUtils::getEnv(), data);
                     // If a wrapper is available, data needs to have the attribute __CPP_CLASS_NAME__, as this was registered for all wrapped types.
-                    if(!java::hasattr(data, "__CPP_CLASS_NAME__"))
+                    if(!JavaWrapperMaster::getInstance()->isWrapperRegisteredForJavaClass(javaClassName))
                     {
-                        std::string typeName = java::JNIUtils::getNameOfClassOfObject(java::JNIUtils::getEnv(), data);
-                       
                         CLAID_THROW(Exception, "Error, a JavaModule tried to post data to channel with ID \"" << channelID << "\", but the type of the provided data is invalid. "
-                        "It is of an unsupported type \"" << typeName << "\", as no CLAID JavaWrapper is available for the type. Please proivide a CLAID JavaWrapper using DECLARE_SERIALIZATION and REGISTER_SERIALIZATION (C++) for this type.");
+                        "It is of an unsupported type \"" << javaClassName << "\", as no CLAID JavaWrapper is available for the type. Please proivide a CLAID JavaWrapper using DECLARE_SERIALIZATION and REGISTER_SERIALIZATION (C++) for this type.");
                     }
 
-                    std::string dataTypeWrapperName = java::fromJavaObject<std::string>(java::attr(data, "__CPP_CLASS_NAME__"));
+                    JavaWrapperBase* wrapper = JavaWrapperMaster::getInstance()->getWrapperForJavaClass(javaClassName);
+
+                    std::string dataTypeWrapperName = wrapper->getFullyQualifiedCppClassName();
 
                     if(dataTypeWrapperName != this->wrapperNameOfDataTypeOfChannel)
                     {
@@ -83,7 +85,6 @@ namespace claid
                         "The data of the channel is of type \"" << this->wrapperNameOfDataTypeOfChannel << "\" whereas the posted data is of type \"" << dataTypeWrapperName << "\".");
                     }
 
-                    JavaWrapperBase* wrapper = JavaWrapperMaster::getInstance()->getWrapperForNativeClass(this->wrapperNameOfDataTypeOfChannel);
                     wrapper->post(this->channelReference, data);   
                 }
         };

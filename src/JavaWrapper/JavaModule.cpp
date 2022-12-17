@@ -2,6 +2,8 @@
 #include "JavaWrapper/JavaWrapperMaster.hpp"
 #include "JavaWrapper/Signatures.hpp"
 
+namespace java = jbind11;
+
 namespace claid
 {
     namespace JavaWrapper
@@ -68,19 +70,18 @@ namespace claid
 
         ChannelWrapper JavaModule::publish(jclass dataType, jstring channelID)
         {
-            // Assign wrapper if not done already:
-            JavaWrapperMaster::getInstance()->assignWrapperToJavaClass(env, dataType);
+            
+            std::string canonicalClassName = java::JNIUtils::getClassName(java::JNIUtils::getEnv(), dataType);
 
-            std::string className = JNIUtils::getClassName(env, dataType);
-            if(!JavaWrapperMaster::getInstance()->isWrapperAssignedToJavaClass(className))
+          
+            if(!JavaWrapperMaster::getInstance()->isWrapperRegisteredForJavaClass(canonicalClassName))
             {
-                CLAID_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
+                CLAID_THROW(Exception, "Error, JavaModule tried to publish channel\"" << channelID << "\" with data type \"" << canonicalClassName << "\", however"
+                << "no JavaWrapper is available for this data type. Please implement a wrapper for this type using DECLARE_SERIALIZATION and"
+                << "REGISTER_SERIALIZATION (invasively or non-invasively).");
             }
-
-            WrapperBase* wrapper = JavaWrapperMaster::getInstance()->getWrapperForJavaClass(className);
-            jobject channel = wrapper->publish(env, this, channelID);
-
-            return channel;
+            JavaWrapperBase* javaWrapper = JavaWrapperMaster::getInstance()->getWrapperForJavaClass(canonicalClassName);
+            return javaWrapper->publish(this, channelID);
         }
 
         ChannelWrapper JavaModule::subscribe(jclass dataType, jstring channelID, jstring functionCallbackName, jstring functionSignature)

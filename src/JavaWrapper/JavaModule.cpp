@@ -1,95 +1,112 @@
 #include "JavaWrapper/JavaModule.hpp"
-#include "JavaWrapper/WrapperMaster.hpp"
+#include "JavaWrapper/JavaWrapperMaster.hpp"
+#include "JavaWrapper/Signatures.hpp"
+#include "JavaWrapper/ChannelDataWrapper.hpp"
 
+namespace java = jbind11;
 
 namespace claid
 {
     namespace JavaWrapper
     {
-        JavaModule::JavaModule(JNIEnv* env, jobject javaObject)
-        {
-            // DO not store JNIEnv here !
-            // Module will run in a separate thread later, but env
-            // is only valid for the thread it was created on.
-            // Thus, we need to get another env in initialize function.
-            env->GetJavaVM(&this->javaVM);
-            this->javaObject = env->NewGlobalRef(javaObject);
-        }
-
-        JavaModule::JavaModule(JavaVM* javaVM, jobject javaObject)
-        {
-            this->javaVM = javaVM;
-            this->javaObject = javaObject;
-        }
+        
 
         void JavaModule::initialize()
         {
             Logger::printfln("JavaModule init");
-            JavaVMAttachArgs args;
-            args.version = JNI_VERSION_1_6; // choose your JNI version
-            args.name = NULL; // you might want to give the java thread a name
-            args.group = NULL; // you might want to assign the java thread to a ThreadGroup
+            std::cout  << std::flush;
+            
+            Logger::printfln("JavaModule init 2");
+            std::cout << std::flush;
+            JNIEnv* env = java::JNIUtils::getEnv();
+                        Logger::printfln("JavaModule init 2.5");
 
-            #ifdef __ANDROID__
-            this->javaVM->AttachCurrentThread(&env, &args);
-            #else
-            this->javaVM->AttachCurrentThread((void**)&env, &args);
-            #endif
-            jclass cls = JNIUtils::getClassOfObject(env, javaObject);
+            jobject self = java::cast(this);
+            Logger::printfln("JavaModule init 3");
+            std::cout << std::flush;
+
+
+            jclass cls = java::JNIUtils::getClassOfObject(env, self);
+            Logger::printfln("JavaModule init 4");
+
             jmethodID mid =
                     env->GetMethodID(cls, "initialize", "()V");
+            Logger::printfln("JavaModule init  5");
 
             if(mid == nullptr)
             {
-                CLAID_THROW(Exception, "Error, function initialize with signature void () not found for class "
-                    << JNIUtils::getClassName(env, cls));
+                // CLAID_THROW(Exception, "Error, function initialize with signature void () not found for class "
+                //     << JNIUtils::getClassName(env, cls));
             }
             else
             {
-                // Return should be of type java class "Channel" (portaible.JavaWrappers.Channel)
-                env->CallVoidMethod(javaObject, mid);
-
+                env->CallVoidMethod(self, mid);
             }
+
+
             env->DeleteLocalRef(cls);
         }
 
-        jobject JavaModule::publish(JNIEnv* env, jclass dataType, jstring channelID)
+        void JavaModule::postInitialize()
         {
-            // Assign wrapper if not done already:
-            WrapperMaster::getInstance()->assignWrapperToJavaClass(env, dataType);
+            // jclass cls = JNIUtils::getClassOfObject(env, javaObject);
 
-            std::string className = JNIUtils::getClassName(env, dataType);
-            if(!WrapperMaster::getInstance()->isWrapperAssignedToJavaClass(className))
-            {
-                CLAID_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
-            }
+            // jmethodID mid =
+            //         env->GetMethodID(cls, "postInitialize", "()V");
 
-            WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapperForJavaClass(className);
-            jobject channel = wrapper->publish(env, this, channelID);
+            // if(mid == nullptr)
+            // {
+            //     // CLAID_THROW(Exception, "Error, function initialize with signature void () not found for class "
+            //     //     << JNIUtils::getClassName(env, cls));
+            // }
+            // else
+            // {
+            //     // Return should be of type java class "Channel" (portaible.JavaWrappers.Channel)
+            //     env->CallVoidMethod(javaObject, mid);
 
-            return channel;
+            // }
+
+            // env->DeleteLocalRef(cls);
         }
 
-        jobject JavaModule::subscribe(JNIEnv* env, jclass dataType, jstring channelID, jstring functionCallbackName, jstring functionSignature)
+        ChannelWrapper JavaModule::publish(jclass dataType, std::string channelID)
         {
-            // Assign wrapper if not done already:
-            WrapperMaster::getInstance()->assignWrapperToJavaClass(env, dataType);
-
-            std::string className = JNIUtils::getClassName(env, dataType);
-            if(!WrapperMaster::getInstance()->isWrapperAssignedToJavaClass(className))
+            std::string canonicalClassName = java::JNIUtils::getClassName(java::JNIUtils::getEnv(), dataType);
+          
+            if(!JavaWrapperMaster::getInstance()->isWrapperRegisteredForJavaClass(canonicalClassName))
             {
-                CLAID_THROW(Exception, "Error, publish was called for java class " << className.c_str() << ", but no corresponding C++ wrapper was found.");
+                CLAID_THROW(Exception, "Error, JavaModule tried to publish channel\"" << channelID << "\" with data type \"" << canonicalClassName << "\", however"
+                << "no JavaWrapper is available for this data type. Please implement a wrapper for this type using DECLARE_SERIALIZATION and"
+                << "REGISTER_SERIALIZATION (invasively or non-invasively).");
+            }
+            JavaWrapperBase* javaWrapper = JavaWrapperMaster::getInstance()->getWrapperForJavaClass(canonicalClassName);
+            return javaWrapper->publish(this, channelID);
+        }
+
+        ChannelWrapper JavaModule::subscribe(jclass dataType, std::string channelID, std::string functionCallbackName)
+        {
+            std::string canonicalClassName = java::JNIUtils::getClassName(java::JNIUtils::getEnv(), dataType);
+          
+            if(!JavaWrapperMaster::getInstance()->isWrapperRegisteredForJavaClass(canonicalClassName))
+            {
+                CLAID_THROW(Exception, "Error, JavaModule tried to subscribe to channel\"" << channelID << "\" with data type \"" << canonicalClassName << "\", however"
+                << "no JavaWrapper is available for this data type. Please implement a wrapper for this type using DECLARE_SERIALIZATION and"
+                << "REGISTER_SERIALIZATION (invasively or non-invasively).");
             }
 
-            WrapperBase* wrapper = WrapperMaster::getInstance()->getWrapperForJavaClass(className);
-            jobject channel = wrapper->subscribe(env, this, channelID, functionCallbackName, functionSignature);
-
-            return channel;
+            JavaWrapperBase* javaWrapper = JavaWrapperMaster::getInstance()->getWrapperForJavaClass(canonicalClassName);
+            return javaWrapper->subscribe(this, channelID, functionCallbackName);
         }
 
         void JavaModule::callCallbackFunction(const std::string& functionName, jobject dataObject)
         {
-            jclass cls = JNIUtils::getClassOfObject(env, javaObject);
+            JNIEnv* env = java::JNIUtils::getEnv();
+
+            // Looks up the handle associated with this JavaModule from the global table.
+            jobject self = java::cast(this);
+
+
+            jclass cls = java::JNIUtils::getClassOfObject(env, self);
             jmethodID mid =
                     env->GetMethodID(cls, functionName.c_str(), Signatures::Function::functionSignatureVoid({Signatures::Class::ChannelData}).c_str());
             
@@ -97,20 +114,70 @@ namespace claid
             {
                 claid::Logger::printfln("NULL");
                 CLAID_THROW(Exception, "Error, could not call callback function. Function " << functionName << " with signature void " << Signatures::Class::ChannelData << " not found for class "
-                    << JNIUtils::getNameOfClassOfObject(env, dataObject));
+                    << java::JNIUtils::getNameOfClassOfObject(env, dataObject));
             }
             else
             {
-                env->CallVoidMethod(javaObject, mid, dataObject);
+                ChannelDataWrapper channelData(dataObject);
+                
+                jobject javaChannelData = java::cast(channelData);
+
+                claid::Logger::printfln("Calling function");
+                env->CallVoidMethod(self, mid, javaChannelData);
+                claid::Logger::printfln("Calling function 2");
+                env->DeleteLocalRef(javaChannelData);
+                
             }
 
             env->DeleteLocalRef(cls);
         }
     
+        void JavaModule::registerPeriodicFunction(std::string identifier, std::string functionName, int32_t periodInMilliseconds)
+        {
+            JNIEnv* env = java::JNIUtils::getEnv();
+            
+
+            std::function<void()> function = std::bind(&JavaModule::invokeJavaPeriodicFunction, this, functionName);
+            Module::registerPeriodicFunction(identifier, function, static_cast<size_t>(periodInMilliseconds));
+        }
+
+        void JavaModule::unregisterPeriodicFunction(jstring identifier)
+        {
+            JNIEnv* env = java::JNIUtils::getEnv();
+            std::string stdIdentifier = java::JNIUtils::toStdString(env, identifier);
+            Module::unregisterPeriodicFunction(stdIdentifier);
+        }
+
+        void JavaModule::invokeJavaPeriodicFunction(std::string functionName)
+        {
+            jobject self = java::cast(this);
+
+            JNIEnv* env = java::JNIUtils::getEnv();
+            jclass cls = java::JNIUtils::getClassOfObject(env, self);
+            jmethodID mid =
+                    env->GetMethodID(cls, functionName.c_str(), Signatures::Function::functionSignatureVoid({/* No parameter, hence empty vector */}).c_str());
+            
+            if(mid == nullptr)
+            {
+                CLAID_THROW(Exception, "Error, registered periodic function could not be called. Function \"" << functionName << "\" with signature void () not found for class "
+                    << java::JNIUtils::getClassName(env, cls));
+            }
+            else
+            {
+                env->CallVoidMethod(self, mid);
+            }
+
+            env->DeleteLocalRef(cls);
+        }
 
         JNIEnv* JavaModule::getEnv()
         {
-            return env;
+            return java::JNIUtils::getEnv();
+        }
+
+        const std::string JavaModule::getModuleName()
+        {
+            return this->moduleName;
         }
 
 

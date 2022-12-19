@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Module/ModuleFactory/ModuleFactoryBase.hpp"
-#include "JNIUtils.hpp"
-#include "JNIFactoryBase.hpp"
 #include "JavaModule.hpp"
+#include "jbind11/jbind11.hpp"
+
+namespace java = jbind11;
 
 namespace claid
 {
@@ -13,13 +14,12 @@ namespace claid
 		class JavaModuleFactory : public ModuleFactoryBase
 		{
 			private:
-				JavaVM* javaVM;
 
 				// The name of the Java Class of the Module.
 				std::string javaModuleClassName;
 
 			public:
-				JavaModuleFactory(std::string javaModuleClassName, JavaVM* javaVM) : javaModuleClassName(javaModuleClassName), javaVM(javaVM)
+				JavaModuleFactory(std::string javaModuleClassName) : javaModuleClassName(javaModuleClassName)
 				{
 
 				}
@@ -31,45 +31,52 @@ namespace claid
 
 				JavaModule* getInstance()
 				{
-					if(javaVM == nullptr)
-					{
-						CLAID_THROW(claid::Exception, "Error in JavaModuleFactory. Cannot spawn Module\"" << javaModuleClassName << "\", because JavaVM is null. Invalid JavaVM was provided to JavaModuleFactory.\n"
-						"Possibly, JNIUtils::onLoad() was not called in JNI_onLoad() ?");
-					}
-
+					printf("getenv1\n");
 					JNIEnv* env = this->getEnv();
+					printf("getenv2\n");
 
 					if(env == nullptr)
 					{
 						CLAID_THROW(claid::Exception, "Error in JavaModuleFactory. Cannot spawn Module\"" << javaModuleClassName << "\", because we were unable to get a java environment.");
 					}
+					printf("getenv3\n");
 
 					jobject javaModuleObject;
-					JNIFactoryBase::newJavaObjectFromClassSignature(env, this->javaModuleClassName, javaModuleObject, "");
-					JavaModule* javaModule = new JavaModule(this->javaVM, javaModuleObject);
+					javaModuleObject = java::JNIUtils::createObjectFromClassName(env, this->javaModuleClassName, "");
+					std::cout << "Java module object " << javaModuleObject << "\n" << std::flush;
+					// Why no global ref here?
+					// Because this is called from a separate native thread,
+					// therefore every jobject we create here will not be garbage collected.
+					// Normally, we need to do env->NewGlobalRef here().
+					// In the future, this should be handled by jbind11 automatically.
+										printf("getenv4\n");
 
-					JNIHandle::setHandle(env, javaModuleObject, javaModule);
+
+
+					// When we create an instance of a class that was created using jbind11 from C++,
+					// the jobject that is passed to JBindWrapper_init(...) is only temporary and not valid after init anymore.
+					// The valid reference is the one we got from createObjectFromClassName.
+					// Hence, we need to override the stored reference in the handle.
+					java::JavaHandle handle = java::JavaHandle::getHandleFromObject(java::JNIUtils::getEnv(), javaModuleObject);
+					handle.getData()->setJavaObjectReference(javaModuleObject);
+					
+					// The JavaModule class is just a class created using jbind11, just like every other wrapped java class.
+					// Therefore, when that object is constructed, it automatically creates a instance of the wrapped C++ object aswell,
+					// which is stored in a JavaHandle.
+					// Therefore, we can just cast the jobject to the corresponding C++ class.
+					// However, make sure to cast as pointer, otherwise the native object will be copied, which is not what we want.
+
+					// Uses pointer caster to get a reference to the JavaModule* instance which is stored
+					// in the JavaHandle of the javaModuleObject.
+					// For this, jbind11 will look up in a global table, which JavaHandle is associated with javaModuleObject.
+					JavaModule* javaModule = java::fromJavaObject<JavaModule*>(javaModuleObject);
 
 					return javaModule;
 				}
 
 				JNIEnv* getEnv() 
 				{
-					JNIEnv* env;
-					int status = this->javaVM->GetEnv((void**)&env, JNI_VERSION_1_6);
-					if(status < 0) {
-						#ifdef __ANDROID__
-						status = this->javaVM->AttachCurrentThread(&env, NULL);
-                        #else
-						status = this->javaVM->AttachCurrentThread((void**)&env, NULL);
-						#endif
-
-
-						if(status < 0) {
-							return nullptr;
-						}
-					}
-					return env;
+					return java::JNIUtils::getEnv();
 				}
 		};
 		

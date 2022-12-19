@@ -152,9 +152,7 @@ namespace claid
 
                 void onData(JavaModule* module, std::string callbackFunctionName, ChannelData<Class> channelData)
                 {
-                    printf("creating data\n");
                     onDataHelper(module, callbackFunctionName, channelData);
-                    printf("back\n");
                 }
 
                 const std::string& getFullyQualifiedCppClassName() const

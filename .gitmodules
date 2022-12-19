@@ -1,0 +1,3 @@
+[submodule "jbind11"]
+	path = jbind11
+	url = https://github.com/RealLast/jbind11

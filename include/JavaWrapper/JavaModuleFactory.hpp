@@ -43,12 +43,9 @@ namespace claid
 
 					jobject javaModuleObject;
 					javaModuleObject = java::JNIUtils::createObjectFromClassName(env, this->javaModuleClassName, "");
+					javaModuleObject = env->NewGlobalRef(javaModuleObject);
 					std::cout << "Java module object " << javaModuleObject << "\n" << std::flush;
-					// Why no global ref here?
-					// Because this is called from a separate native thread,
-					// therefore every jobject we create here will not be garbage collected.
-					// Normally, we need to do env->NewGlobalRef here().
-					// In the future, this should be handled by jbind11 automatically.
+					
 										printf("getenv4\n");
 
 

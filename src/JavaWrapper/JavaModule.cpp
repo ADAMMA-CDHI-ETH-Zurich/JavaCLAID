@@ -122,9 +122,7 @@ namespace claid
                 
                 jobject javaChannelData = java::cast(channelData);
 
-                claid::Logger::printfln("Calling function");
                 env->CallVoidMethod(self, mid, javaChannelData);
-                claid::Logger::printfln("Calling function 2");
                 env->DeleteLocalRef(javaChannelData);
                 
             }

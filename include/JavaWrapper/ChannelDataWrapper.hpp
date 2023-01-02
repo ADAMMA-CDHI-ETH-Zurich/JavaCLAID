@@ -26,9 +26,9 @@ namespace claid
 
                 static void addToJbindPackage(java::JavaPackage& p)
                 {
-                    java::JavaClass<ChannelDataWrapper> cls(p, "ChannelData");
+                    java::JavaClass<ChannelDataWrapper> cls(p, "ChannelData", java::GenericClass());
 
-                    cls.def("value", &ChannelDataWrapper::value);
+                    cls.def("value", &ChannelDataWrapper::value, java::GenericReturn());
                 }
 
                 jobject value()

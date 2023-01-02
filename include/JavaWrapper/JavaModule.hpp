@@ -33,9 +33,10 @@ namespace claid
                 {
                     java::JavaClass<JavaModule> cls(p, "Module");
 
-                    cls.def("publish", &JavaModule::publish);
-                    cls.def("subscribe", &JavaModule::subscribe);
+                    cls.def("publish", &JavaModule::publish, java::GenericFunction(), java::GenericTypeReturn());
+                    cls.def("subscribe", &JavaModule::subscribe, java::GenericFunction(), java::GenericTypeReturn());
                     cls.def("registerPeriodicFunction", &JavaModule::registerPeriodicFunction);
+                    cls.def("getUniqueIdentifier", &JavaModule::getUniqueIdentifier);
                 }
 
                 void initialize();

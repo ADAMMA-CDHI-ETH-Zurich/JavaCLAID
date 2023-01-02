@@ -39,6 +39,16 @@ class JavaCLAID
         {
             CLAID_RUNTIME->connectTo(ipAddress, port);
         } 
+
+        static void enableLoggingToFile(std::string path)
+        {
+            CLAID_RUNTIME->enableLoggingToFile(path);
+        }
+
+        static void disableLoggingToFile()
+        {
+            CLAID_RUNTIME->disableLoggingToFile();
+        }
 };
 
 JBIND11_PACKAGE(JavaCLAID, p)  
@@ -49,6 +59,8 @@ JBIND11_PACKAGE(JavaCLAID, p)
     cls.def_static("startInSeparateThread", &JavaCLAID::startInSeparateThread);
     cls.def_static("startNonBlockingWithoutUpdates", &JavaCLAID::startNonBlockingWithoutUpdates);
     cls.def_static("connectTo", &JavaCLAID::connectTo);
+    cls.def_static("enableLoggingToFile", &JavaCLAID::enableLoggingToFile);
+    cls.def_static("disableLoggingToFile", &JavaCLAID::disableLoggingToFile);
 
     JavaModule::addToJbindPackage(p);
     ChannelWrapper::addToJbindPackage(p);

@@ -2,6 +2,7 @@
 
 #include "RunTime/RunTime.hpp"
 #include "JavaWrapper/JavaWrapperMaster.hpp"
+#include "JavaExtras/GenericParams.hpp"
 #include "jbind11/jbind11.hpp"
 namespace java = jbind11;
 
@@ -49,9 +50,9 @@ namespace claid
 
                 static void addToJbindPackage(jbind11::JavaPackage& package)
                 {
-                    java::JavaClass<ChannelWrapper> javaClass(package, "Channel");
+                    java::JavaClass<ChannelWrapper> javaClass(package, "Channel", java::GenericClass());
 
-                    javaClass.def("post", &ChannelWrapper::post);
+                    javaClass.def("post", &ChannelWrapper::post, java::GenericParams({0}));
                 //  pyClass.def("publish", &PythonModule::publish);
                 }
 

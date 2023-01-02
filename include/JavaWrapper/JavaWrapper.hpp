@@ -100,7 +100,7 @@ namespace claid
 
                     std::string::size_type charIndex = fqName.size() - 1;
 
-                    while(charIndex >= 0)
+                    while(charIndex != 0)
                     {
                         if(fqName[charIndex] == ':')
                         {

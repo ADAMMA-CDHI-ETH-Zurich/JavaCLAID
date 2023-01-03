@@ -83,7 +83,6 @@ namespace claid
                 void generate(java::JavaPackage& package, const std::string& className)
                 {
                     this->className = className;
-                    Logger::printfln("Registering class %s", className.c_str());
                     staticMemberRegisted = false;
                     // Sadly, need to create an instance of the class here, cuz we have no means of statically calling the functions, yet.
                     Class p;

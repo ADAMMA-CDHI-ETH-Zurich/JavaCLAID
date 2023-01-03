@@ -34,7 +34,6 @@ namespace claid
 						"<JavaModule class=\"com.example.MyModule\">\n"
 						"\t...\n"
 						"</JavaModule>");
-						return nullptr;
 					}   
 						
 					className = Signatures::Class::classNameToSignature(className);
@@ -44,6 +43,12 @@ namespace claid
 
 					JavaModule* javaModule = factory.getInstance();
 					printf("Module instantiated!\n");
+
+					if(javaModule == nullptr)
+					{
+						CLAID_THROW(claid::Exception, "Error, failed to load JavaModule when parsing XML configuration.\n"
+						<< "Module of class \"" << className << "\" could not be instantiated.");
+					}
 
 			// 		XMLDeserializer deserializer(node);
 			// 		deserializer.deserializeFromNode("JavaModule", *javaModule);
@@ -55,7 +60,8 @@ namespace claid
 			// 		printf("Module instantiated 3!\n");
             // std::cout << std::flush;
 
-
+					// Only return valid javaModules!
+					// Do NOT return nullptr!
 					return javaModule;
 				}
 

@@ -52,14 +52,15 @@ namespace claid
                     std::function<void (ChannelData<Class>)> callbackFunction = 
                         std::bind(&JavaWrapper::onData, this, module, callbackFunctionName, std::placeholders::_1);
 
+                    std::string channelIDWithNamespace = module->addNamespacesToChannelID(channelID);
                     *channel = 
-                        CLAID_RUNTIME->channelManager.subscribe<Class>(channelID, module->makeSubscriber(callbackFunction), module->getUniqueIdentifier());
+                        CLAID_RUNTIME->channelManager.subscribe<Class>(channelIDWithNamespace, module->makeSubscriber(callbackFunction), module->getUniqueIdentifier());
                     
                     // the claid::JavaWrapper::ChannelWrapper is available in JavaCLAID package, thus can be casted to 
                     // a java object automatically.
                  
-                    ChannelWrapper channelWrapper(channelID, this->fullyQualifiedClassName, std::static_pointer_cast<void>(channel));
-                    printf("Subscribed to channel %s", channelID.c_str());
+                    ChannelWrapper channelWrapper(channelIDWithNamespace, this->fullyQualifiedClassName, std::static_pointer_cast<void>(channel));
+                    Logger::printfln("Subscribed to channel %s", channelIDWithNamespace.c_str());
 
                     return channelWrapper;
                 }
@@ -69,10 +70,11 @@ namespace claid
                 {
                     std::shared_ptr<Channel<Class>> channel(new Channel<Class>);
             
+                    std::string channelIDWithNamespace = module->addNamespacesToChannelID(channelID);
                     *channel = 
-                        CLAID_RUNTIME->channelManager.publish<Class>(channelID, module->getUniqueIdentifier());
+                        CLAID_RUNTIME->channelManager.publish<Class>(channelIDWithNamespace, module->getUniqueIdentifier());
                   
-                    ChannelWrapper channelWrapper(channelID, this->fullyQualifiedClassName, std::static_pointer_cast<void>(channel));
+                    ChannelWrapper channelWrapper(channelIDWithNamespace, this->fullyQualifiedClassName, std::static_pointer_cast<void>(channel));
                     return channelWrapper;
                 }
 

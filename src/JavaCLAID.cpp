@@ -6,6 +6,7 @@
 namespace java = jbind11;
 
 #include "CLAID.hpp"
+#include "XML/XMLDocument.hpp"
 #include "JavaWrapper/ChannelDataWrapper.hpp"
 
 using namespace claid;
@@ -18,6 +19,13 @@ class JavaCLAID
         {
             claid::Logger::printfln("Loading from XML %s", path.c_str());
             CLAID_RUNTIME->loadFromXML(path);
+        }
+
+        static void loadFromXMLString(std::string xmlString)
+        {
+            claid::XMLDocument claidDocument;
+            claidDocument.loadFromString(xmlString);
+            CLAID_RUNTIME->loadFromXML(claidDocument);
         }
 
         static void start()
@@ -55,6 +63,7 @@ JBIND11_PACKAGE(JavaCLAID, p)
 {
     java::JavaClass<JavaCLAID> cls(p, "CLAID");
     cls.def_static("loadFromXML", &JavaCLAID::loadFromXML);
+    cls.def_static("loadFromXMLString", &JavaCLAID::loadFromXMLString);
     cls.def_static("start", &JavaCLAID::start);
     cls.def_static("startInSeparateThread", &JavaCLAID::startInSeparateThread);
     cls.def_static("startNonBlockingWithoutUpdates", &JavaCLAID::startNonBlockingWithoutUpdates);

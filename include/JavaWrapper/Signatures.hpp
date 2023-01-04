@@ -29,14 +29,14 @@ namespace claid
                 static std::string classNameToSignature(const std::string& javaClassName)
                 {
                     std::string result = javaClassName;
-                    stringReplaceAll(result, ".", "/");
+                    StringUtils::stringReplaceAll(result, ".", "/");
                     return result;
                 }
 
                 static std::string signatureToClassName(const std::string& javaClassName)
                 {
                     std::string result = javaClassName;
-                    stringReplaceAll(result, "/", ".");
+                    StringUtils::stringReplaceAll(result, "/", ".");
                     return result;
                 }
             }

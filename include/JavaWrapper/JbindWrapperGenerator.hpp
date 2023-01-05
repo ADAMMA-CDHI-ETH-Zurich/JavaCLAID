@@ -25,7 +25,7 @@ namespace claid
                 }
 
                 template<typename T>
-                void member(const char*, T& member, std::string comment, T& defaultValue)
+                void member(const char*, T& member, std::string comment, T defaultValue)
                 {
 
                 }

@@ -20,7 +20,7 @@ namespace claid
 
                 JavaModule()
                 {
-                    
+
                 }
 
                 template<typename Reflector>
@@ -65,7 +65,6 @@ namespace claid
 
             private:
 
-                std::string moduleName;
 
                 void invokeJavaPeriodicFunction(std::string functionName);
 

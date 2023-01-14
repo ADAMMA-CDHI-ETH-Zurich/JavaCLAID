@@ -164,8 +164,8 @@ namespace claid
             {
                 env->CallVoidMethod(self, mid);
             }
-
             env->DeleteLocalRef(cls);
+
         }
 
         JNIEnv* JavaModule::getEnv()
@@ -175,7 +175,10 @@ namespace claid
 
         const std::string JavaModule::getModuleName()
         {
-            return this->moduleName;
+            jobject self = java::cast(this);
+            JNIEnv* env = java::JNIUtils::getEnv();
+
+            return java::JNIUtils::getNameOfClassOfObject(env, self);
         }
 
 

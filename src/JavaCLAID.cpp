@@ -7,7 +7,9 @@ namespace java = jbind11;
 
 #include "CLAID.hpp"
 #include "XML/XMLDocument.hpp"
+
 #include "JavaWrapper/ChannelDataWrapper.hpp"
+#include "JavaWrapper/ChannelWrapper.hpp"
 
 using namespace claid;
 using namespace claid::JavaWrapper;

@@ -18,10 +18,11 @@ class JavaCLAID
 {
     public:
         static jobject context;
+        static jobject activity;
 
         static void loadFromXML(std::string path)
         {
-            claid::Logger::printfln("Loading from XML %s", path.c_str());
+            claid::Logger::printfln("JavaCLAID: Loading from XML %s", path.c_str());
             CLAID_RUNTIME->loadFromXML(path);
         }
 
@@ -62,8 +63,6 @@ class JavaCLAID
             CLAID_RUNTIME->disableLoggingToFile();
         }
 
-  
-
         #if defined __JBIND11_CROSSPLATFORM_ANDROID__ || defined(__ANDROID__)
             static void setContext(jobject context)
             {  
@@ -77,12 +76,31 @@ class JavaCLAID
                 {
                     CLAID_THROW(Exception, "Error in JavaCLAID: Cannot return context in getContext().\n"
                     "Context is not available, since no context has been set.\n"
-                    "Please use CLAID.context(...) and provide an activity or service as parent.\n"
+                    "Please use CLAID.setContext(...) to set the context.\n"
                     "E.g., if you are starting CLAID from within MainActivity, simply do CLAID.context(this.getBaseContext()) BEFORE CLAID.start()");
                 }   
            
                 return JavaCLAID::context;
-            }          
+            }         
+
+            static void setActivity(jobject activity)
+            {  
+                JNIEnv* env = java::JNIUtils::getEnv();
+                JavaCLAID::activity = env->NewGlobalRef(activity);
+            }
+
+            static jobject getActivity()
+            {
+                if(JavaCLAID::activity == nullptr)
+                {
+                    CLAID_THROW(Exception, "Error in JavaCLAID: Cannot return activity in getActivity().\n"
+                    "Activity is not available, since no activity has been set.\n"
+                    "Please use CLAID.setActivity(...) and provide an activity.\n"
+                    "E.g., if you are starting CLAID from within MainActivity, simply do CLAID.context(this)) BEFORE CLAID.start()");
+                }   
+           
+                return JavaCLAID::context;
+            }   
         #endif
 };
 
@@ -102,6 +120,8 @@ JBIND11_PACKAGE(JavaCLAID, p)
     #if defined __JBIND11_CROSSPLATFORM_ANDROID__ || defined(__ANDROID__)
     cls.def_static("setContext", &JavaCLAID::setContext);
     cls.def_static("getContext", &JavaCLAID::getContext);
+    cls.def_static("setActivity", &JavaCLAID::setActivity);
+    cls.def_static("getActivity", &JavaCLAID::getActivity);
     #endif
 
     JavaModule::addToJbindPackage(p);
@@ -110,3 +130,4 @@ JBIND11_PACKAGE(JavaCLAID, p)
 }
 
 jobject JavaCLAID::context = nullptr;
+jobject JavaCLAID::activity = nullptr;

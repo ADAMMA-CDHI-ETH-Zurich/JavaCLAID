@@ -17,6 +17,8 @@ using namespace claid::JavaWrapper;
 class JavaCLAID
 {
     public:
+        static jobject context;
+
         static void loadFromXML(std::string path)
         {
             claid::Logger::printfln("Loading from XML %s", path.c_str());
@@ -59,6 +61,29 @@ class JavaCLAID
         {
             CLAID_RUNTIME->disableLoggingToFile();
         }
+
+  
+
+        #if defined __JBIND11_CROSSPLATFORM_ANDROID__ || defined(__ANDROID__)
+            static void setContext(jobject context)
+            {  
+                JNIEnv* env = java::JNIUtils::getEnv();
+                JavaCLAID::context = env->NewGlobalRef(context);
+            }
+
+            static jobject getContext()
+            {
+                if(JavaCLAID::context == nullptr)
+                {
+                    CLAID_THROW(Exception, "Error in JavaCLAID: Cannot return context in getContext().\n"
+                    "Context is not available, since no context has been set.\n"
+                    "Please use CLAID.context(...) and provide an activity or service as parent.\n"
+                    "E.g., if you are starting CLAID from within MainActivity, simply do CLAID.context(this.getBaseContext()) BEFORE CLAID.start()");
+                }   
+           
+                return JavaCLAID::context;
+            }          
+        #endif
 };
 
 JBIND11_PACKAGE(JavaCLAID, p)  
@@ -72,8 +97,16 @@ JBIND11_PACKAGE(JavaCLAID, p)
     cls.def_static("connectTo", &JavaCLAID::connectTo);
     cls.def_static("enableLoggingToFile", &JavaCLAID::enableLoggingToFile);
     cls.def_static("disableLoggingToFile", &JavaCLAID::disableLoggingToFile);
+;
+
+    #if defined __JBIND11_CROSSPLATFORM_ANDROID__ || defined(__ANDROID__)
+    cls.def_static("setContext", &JavaCLAID::setContext);
+    cls.def_static("getContext", &JavaCLAID::getContext);
+    #endif
 
     JavaModule::addToJbindPackage(p);
     ChannelWrapper::addToJbindPackage(p);
     ChannelDataWrapper::addToJbindPackage(p);
 }
+
+jobject JavaCLAID::context = nullptr;

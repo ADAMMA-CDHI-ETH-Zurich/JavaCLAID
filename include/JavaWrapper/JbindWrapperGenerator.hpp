@@ -59,7 +59,7 @@ namespace claid
                 {
                     initJavaClassIfNecessary();
                     printf("\t\t Registering function %s to class %s\n", name.c_str(), className.c_str());
-                   // cls->def(name.c_str(), ptr);
+                    cls->def(name.c_str(), ptr);
                     staticMemberRegisted = true;
                 }
 
@@ -68,7 +68,7 @@ namespace claid
                 {
                     initJavaClassIfNecessary();
                     printf("\t\t Registering function %s to class %s\n", name.c_str(), className.c_str());
-                  //  cls->def(name.c_str(), ptr);
+                    cls->def(name.c_str(), ptr);
                     staticMemberRegisted = true;
                 }
 

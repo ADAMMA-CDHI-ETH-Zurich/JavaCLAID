@@ -25,7 +25,8 @@ namespace claid
                 virtual ChannelWrapper publish(JavaModule* module, std::string channelID) = 0;
                 
                 virtual void post(std::shared_ptr<void> channelReference, jobject data) = 0;
-               
+                virtual void postWithTimestamp(std::shared_ptr<void> channelReference, jobject data, int64_t timestamp) = 0;
+
                 void overrideJbindWrapperGenerator(std::shared_ptr<JbindWrapperGeneratorBase> newWrapperGenerator)
                 {
                     this->wrapperGenerator = newWrapperGenerator;

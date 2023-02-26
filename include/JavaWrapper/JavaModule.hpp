@@ -26,6 +26,34 @@ namespace claid
                 template<typename Reflector>
                 void reflect(Reflector& r)
                 {
+                    /*JNIEnv* env = java::JNIUtils::getEnv();
+
+                    jobject self = java::cast(this);
+                    std::cout << std::flush;
+
+                    JavaWrapperBase* wrapper = getWrapperByName(fieldClassName);
+                    wrapper->getReflectorByName(ReflectorName<Reflector>);
+
+
+                    Type->getReflectorByName();
+                    WrappedReflector<Reflector> = getReflectorByName(ReflectorName<Reflector>)
+
+                    jclass cls = java::JNIUtils::getClassOfObject(env, self);
+
+                    JavaWrappedReflector<Reflector> wrappedReflector(r);
+                    jmethodID mid =
+                    env->GetMethodID(cls, "reflect", "(LJavaCLAID.Reflector)V");
+                    Logger::printfln("JavaModule init  5");
+
+                    if(mid == nullptr)
+                    {
+                        // CLAID_THROW(Exception, "Error, function initialize with signature void () not found for class "
+                        //     << JNIUtils::getClassName(env, cls));
+                    }
+                    else
+                    {
+                        env->CallVoidMethod(self, mid);
+                    }*/
 
                 }
 

@@ -151,6 +151,15 @@ namespace claid
                     channel->post(*obj);
                 }
 
+                virtual void postWithTimestamp(std::shared_ptr<void> channelReference, jobject data, int64_t timestamp)
+                {
+                    std::shared_ptr<Channel<Class>> channel = std::static_pointer_cast<Channel<Class>>(channelReference);
+
+                    Class* obj = java::fromJavaObject<Class*>(data);
+
+
+                    channel->post(*obj, Time::fromUnixTimestampMilliseconds(timestamp));
+                }
 
                 void onData(JavaModule* module, std::string callbackFunctionName, ChannelData<Class> channelData)
                 {

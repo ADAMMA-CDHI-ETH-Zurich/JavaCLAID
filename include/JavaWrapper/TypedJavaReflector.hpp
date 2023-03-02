@@ -33,9 +33,9 @@ namespace claid
             std::function<T& ()> getter;
 
             template<typename T>
-            void javaSetter(memberFieldName, jobject member, T&)
+            void javaPrimitiveSetter(const std::string memberFieldName, jobject member, T&)
             {
-                
+                if(getPrimitiveFieldd)
             }
 
             void checkIsNative()

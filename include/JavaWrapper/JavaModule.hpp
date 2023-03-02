@@ -32,31 +32,31 @@ namespace claid
 
                     JavaReflector(self, r);
 
-                    std::cout << std::flush;
+                    // std::cout << std::flush;
 
-                    JavaWrapperBase* wrapper = getWrapperByName(fieldClassName);
-                    wrapper->getReflectorByName(ReflectorName<Reflector>);
+                    // JavaWrapperBase* wrapper = getWrapperByName(fieldClassName);
+                    // wrapper->getReflectorByName(ReflectorName<Reflector>);
 
 
-                    Type->getReflectorByName();
-                    WrappedReflector<Reflector> = getReflectorByName(ReflectorName<Reflector>)
+                    // Type->getReflectorByName();
+                    // WrappedReflector<Reflector> = getReflectorByName(ReflectorName<Reflector>)
 
-                    jclass cls = java::JNIUtils::getClassOfObject(env, self);
+                    // jclass cls = java::JNIUtils::getClassOfObject(env, self);
 
-                    JavaWrappedReflector<Reflector> wrappedReflector(r);
-                    jmethodID mid =
-                    env->GetMethodID(cls, "reflect", "(LJavaCLAID.Reflector)V");
-                    Logger::printfln("JavaModule init  5");
+                    // JavaWrappedReflector<Reflector> wrappedReflector(r);
+                    // jmethodID mid =
+                    // env->GetMethodID(cls, "reflect", "(LJavaCLAID.Reflector)V");
+                    // Logger::printfln("JavaModule init  5");
 
-                    if(mid == nullptr)
-                    {
-                        // CLAID_THROW(Exception, "Error, function initialize with signature void () not found for class "
-                        //     << JNIUtils::getClassName(env, cls));
-                    }
-                    else
-                    {
-                        env->CallVoidMethod(self, mid);
-                    }*/
+                    // if(mid == nullptr)
+                    // {
+                    //     // CLAID_THROW(Exception, "Error, function initialize with signature void () not found for class "
+                    //     //     << JNIUtils::getClassName(env, cls));
+                    // }
+                    // else
+                    // {
+                    //     env->CallVoidMethod(self, mid);
+                    // }*/
 
                 }
 

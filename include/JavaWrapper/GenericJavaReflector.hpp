@@ -1,5 +1,6 @@
 #pragma 
 #include <string>
+#include "jbind11/jbind11.hpp"
 
 namespace claid
 {
@@ -7,20 +8,23 @@ namespace claid
     {
         class GenericJavaReflector
         {
-            GenericJavaReflector()
-            {
+            public:
+                GenericJavaReflector()
+                {
 
-            }
+                }
 
-            ~GenericJavaReflector()
-            {
+                ~GenericJavaReflector()
+                {
 
-            }
+                }
 
-            virtual void reflect(std::string memberFieldName, jobject member)
-            {
+                
 
-            };
+                virtual void reflectFromJava(std::string memberFieldName, jobject member)
+                {
+
+                };
 
        
         };

@@ -26,9 +26,12 @@ namespace claid
                 template<typename Reflector>
                 void reflect(Reflector& r)
                 {
-                    /*JNIEnv* env = java::JNIUtils::getEnv();
+                    JNIEnv* env = java::JNIUtils::getEnv();
 
                     jobject self = java::cast(this);
+
+                    JavaReflector(self, r);
+
                     std::cout << std::flush;
 
                     JavaWrapperBase* wrapper = getWrapperByName(fieldClassName);

@@ -26,7 +26,14 @@ namespace claid
                 JNIEnv* env = java::JNIUtils::getEnv();
                 std::string className = java::getNameOfClassOfObject(member);
 
-                if(className = java::JNIUtils::)
+                if(isPrimitive(className))
+                {
+                    handlePrimitive(member);
+                }
+                else
+                {
+                    handleWithWrapper(member);
+                }
             };
 
             std::function<void (T&)> setter;
@@ -38,37 +45,23 @@ namespace claid
                 if(getPrimitiveFieldd)
             }
 
-            void checkIsNative()
+            void isPrimitive()
             {
-                if(className == "java.lang.Byte")
-                {
-                    reflector.member(memberFieldName, &nativeFieldGetter<int8_t>)
-                }
-                
-
-                else if(className == "java.lang.Short")
-            
-
-            
-                else if(className == "java.lang.Integer")
-            
-
-            
-                // Yes, it's "J", because "L" is used for clases.
-                else if(className == "java.lang.Long")
-        
-
-        
-                else if(className == "java.lang.Float")
-        
-                else if(className == "java.lang.Double")
-        
-                else if(className == "java.lang.Character")
-            
-
-        
-                else if(className == "java.lang.Boolean")
+                return  className == "java.lang.Byte" ||
+                        className == "java.lang.Short" ||
+                        className == "java.lang.Integer" ||
+                        className == "java.lang.Long" ||
+                        className == "java.lang.Float" ||
+                        className == "java.lang.Double" ||
+                        className == "java.lang.Character" ||
+                        className == "java.lang.Boolean";
              
+            }
+
+            void handlePrimitive()
+            {
+                                    reflector.member(memberFieldName, &nativeFieldGetter<int8_t>)
+
             }
             
         };

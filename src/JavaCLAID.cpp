@@ -10,7 +10,7 @@ namespace java = jbind11;
 
 #include "JavaWrapper/ChannelDataWrapper.hpp"
 #include "JavaWrapper/ChannelWrapper.hpp"
-
+#include "JavaWrapper/GenericJavaReflector.hpp"
 using namespace claid;
 using namespace claid::JavaWrapper;
 
@@ -127,6 +127,7 @@ JBIND11_PACKAGE(JavaCLAID, p)
     JavaModule::addToJbindPackage(p);
     ChannelWrapper::addToJbindPackage(p);
     ChannelDataWrapper::addToJbindPackage(p);
+    GenericJavaReflector::addToJbindPackage(p);
 }
 
 jobject JavaCLAID::context = nullptr;

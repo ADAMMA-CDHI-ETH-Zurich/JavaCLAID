@@ -8,7 +8,6 @@ namespace java = jbind11;
 
 namespace claid
 {
-	using namespace ModuleFactory;
 	namespace JavaWrapper
 	{
 		class JavaModuleFactory : public ModuleFactoryBase

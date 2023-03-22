@@ -43,10 +43,10 @@ namespace claid
 
 
 		template<typename Class>
-		class RegisterHelper
+		class JavaWrapperRegistrar
 		{
 			public:
-				RegisterHelper(std::string name) 
+				JavaWrapperRegistrar(std::string name) 
 				{
 					JavaWrapperMaster::getInstance()->registerWrapper<Class>(name);
 				}
@@ -57,16 +57,16 @@ namespace claid
 // Solving cyclic dependencies is !fun.
 #include "JavaWrapper.hpp"
 
-#define DECLARE_JAVA_WRAPPER(className) \
-	static volatile claid::JavaWrapper::RegisterHelper<claid::JavaWrapper::JavaWrapper<className>> wrapperRegistrar;\
 
-#define REGISTER_JAVA_WRAPPER(fullyQualifiedClassName) \
-	volatile claid::JavaWrapper::RegisterHelper<claid::JavaWrapper::JavaWrapper<fullyQualifiedClassName>> fullyQualifiedClassName::wrapperRegistrar (std::string(#fullyQualifiedClassName));\
-
-#define LAZY_PYTHON_WRAPPER(fullyQualifiedClassName, className) \
-    class className##JavaWrapper##Helper\
-    {\
-        REGISTER_JAVA_WRAPPER(fullyQualifiedClassName)\
-    };\
-    volatile claid::JavaWrapper::RegisterHelper<claid::JavaWrapper::JavaWrapper<fullyQualifiedClassName>> className##Wrapper##Helper::wrapperRegistrar(std::string(#fullyQualifiedClassName));\
-    // Note, that in contrast to REGISTER_JAVA_WRAPPER, here we use another constructor of the registrar, which already matches the corresponding javaClassName to the C++ className.
+#define REGISTER_JAVA_WRAPPER(fullyQualifiedClassName)\
+namespace\
+{\
+    static volatile claid::JavaWrapper::JavaWrapperRegistrar<claid::JavaWrapper::JavaWrapper<fullyQualifiedClassName>> wrapperRegistrar (std::string(#fullyQualifiedClassName));\
+}
+// #define LAZY_PYTHON_WRAPPER(fullyQualifiedClassName, className) \
+//     class className##JavaWrapper##Helper\
+//     {\
+//         REGISTER_JAVA_WRAPPER(fullyQualifiedClassName)\
+//     };\
+//     volatile claid::JavaWrapper::RegisterHelper<claid::JavaWrapper::JavaWrapper<fullyQualifiedClassName>> className##Wrapper##Helper::wrapperRegistrar(std::string(#fullyQualifiedClassName));\
+//     // Note, that in contrast to REGISTER_JAVA_WRAPPER, here we use another constructor of the registrar, which already matches the corresponding javaClassName to the C++ className.

@@ -166,6 +166,22 @@ namespace claid
                     onDataHelper(module, callbackFunctionName, channelData);
                 }
 
+                void forwardReflector(const char* memberFieldName, const std::string& reflectorName, void* reflectorPtr, jobject javaObject)
+                {
+                    Class* dataPtr = java::fromJavaObject<Class*>(javaObject);
+                    std::string className = ClassFactory::getInstance()->getClassNameOfObject(*dataPtr);
+
+                    UntypedReflector* untypedReflector;
+                    if (!ReflectionManager::getInstance()->getReflectorForClass(className, reflectorName, untypedReflector))
+                    {
+                        CLAID_THROW(claid::Exception, "Failed to forward reflector of type \"" << reflectorName << "\" to java class of type \"" << this->getCanonicalJavaClassName() << "\"."
+                        << "The underlying Cpp class \"" << className << "\" was not registered to the CLAID serialization system. Please register this class using REGISTER_SERIALIZATION(...).");
+                    }
+
+
+                    untypedReflector->invokeMember(memberFieldName, static_cast<void*>(reflectorPtr), static_cast<void*>(dataPtr));
+                }
+
                 const std::string& getFullyQualifiedCppClassName() const
                 {
                     return this->fullyQualifiedClassName;
@@ -175,6 +191,8 @@ namespace claid
                 {
                     return this->canonicalJavaClassName;
                 }
+
+
             
         };
 

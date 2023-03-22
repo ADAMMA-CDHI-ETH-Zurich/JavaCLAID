@@ -50,9 +50,9 @@ namespace claid
 						<< "Module of class \"" << className << "\" could not be instantiated.");
 					}
 
-			// 		XMLDeserializer deserializer(node);
-			// 		deserializer.deserializeFromNode("JavaModule", *javaModule);
-			// 		std::string id;
+					XMLDeserializer deserializer(node);
+					deserializer.deserializeExistingPolymorphicObject("claid::JavaWrapper::JavaModule", javaModule);
+					std::string id;
 			// 		if (node->getAttribute("id", id))
 			// 		{
 			// 			javaModule->setID(id);

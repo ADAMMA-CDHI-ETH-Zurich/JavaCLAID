@@ -3,6 +3,7 @@
 #include "GenericJavaReflector.hpp"
 #include "jbind11/JNIUtils/JNIUtils.hpp"
 #include "JavaWrapperMaster.hpp"
+#include "Signatures.hpp"
 namespace java = jbind11;
 
 namespace claid
@@ -78,6 +79,41 @@ namespace claid
                     return java::JNIUtils::getPrimitiveField<T>(env, this->objectToReflect, fieldID);
                 }
 
+                template<typename T>
+                void javaObjectSetter(std::string memberFieldName, jobject member, const T& value)
+                {
+                    JNIEnv* env = java::JNIUtils::getEnv();
+                    std::string signature = Signatures::Class::classNameToEncapsulatedSignature(java::Caster<T>::canonicalTypeName());
+                    jfieldID fieldID = java::JNIUtils::getFieldOfClassOfObject(env, this->objectToReflect, memberFieldName, signature);
+
+                    if(fieldID == nullptr)
+                    {
+                        std::string className = java::JNIUtils::getNameOfClassOfObject(env, objectToReflect);
+                        CLAID_THROW(claid::Exception, "Error, cannot set member \"" << memberFieldName << "\" of Java class \"" << className << "\"."
+                        << "The class does not have a member field called \"" << memberFieldName << "\" that has signature \"" << signature << "\"."); 
+                    }
+
+                    std::string& nonConstString = *const_cast<std::string*>(&value);
+                    env->SetObjectField(this->objectToReflect, fieldID, java::cast<std::string>(nonConstString));
+                }
+
+                template<typename T>
+                T javaObjectGetter(std::string memberFieldName, jobject member)
+                {
+                    JNIEnv* env = java::JNIUtils::getEnv();
+                    std::string signature = Signatures::Class::classNameToEncapsulatedSignature(java::Caster<T>::canonicalTypeName());
+                    jfieldID fieldID = java::JNIUtils::getFieldOfClassOfObject(env, this->objectToReflect, memberFieldName, signature);
+
+                    if(fieldID == nullptr)
+                    {
+                        std::string className = java::JNIUtils::getNameOfClassOfObject(env, this->objectToReflect);
+                        CLAID_THROW(claid::Exception, "Error, cannot get member \"" << memberFieldName << "\" of Java class \"" << className << "\"."
+                        << "The class does not have a member field called \"" << memberFieldName << "\" that has signature \"" << signature << "\"."); 
+                    }
+
+                    return java::fromJavaObject<T>(env->GetObjectField(this->objectToReflect, fieldID));
+                }
+
                 bool isPrimitive(const std::string& className)
                 {
                     return  className == "java.lang.Byte" ||
@@ -87,7 +123,8 @@ namespace claid
                             className == "java.lang.Float" ||
                             className == "java.lang.Double" ||
                             className == "java.lang.Character" ||
-                            className == "java.lang.Boolean";
+                            className == "java.lang.Boolean" ||
+                            className == "java.lang.String";
                 
                 }
                 
@@ -96,6 +133,14 @@ namespace claid
                 {
                     Getter<T> getter(&TypedJavaReflector::javaPrimitiveGetter<T>, this, memberFieldName, member);
                     Setter<T> setter(&TypedJavaReflector::javaPrimitiveSetter<T>, this, memberFieldName, member);
+                    reflector->member(memberFieldName.c_str(), getter, setter);
+                }
+
+                void reflectString(std::string memberFieldName, jobject member)
+                {
+                    typedef std::string T;
+                    Getter<T> getter(&TypedJavaReflector::javaObjectGetter<T>, this, memberFieldName, member);
+                    Setter<T> setter(&TypedJavaReflector::javaObjectSetter<T>, this, memberFieldName, member);
                     reflector->member(memberFieldName.c_str(), getter, setter);
                 }
 
@@ -136,14 +181,17 @@ namespace claid
                     {
                         reflectPrimitive<bool>(memberFieldName, member);
                     }
+                    else if(className == "java.lang.String")
+                    {
+                        // Treat string as primitive.
+                        reflectString(memberFieldName, member);
+                    }
                 }
 
                 void handleWithWrapper(const std::string& memberFieldName, jobject member)
                 {
-                    printf("Handle primitive %d\n", 1);
                     JNIEnv* env = java::JNIUtils::getEnv();
                     std::string memberClassName = java::JNIUtils::getNameOfClassOfObject(env, member);
-                    printf("Handle primitive %d\n", 2);
 
                     
                     claid::JavaWrapper::JavaWrapperBase* javaWrapper = claid::JavaWrapper::JavaWrapperMaster::getInstance()->getWrapperForJavaClass(memberClassName);
@@ -151,10 +199,9 @@ namespace claid
                     {
                         std::string className = java::JNIUtils::getNameOfClassOfObject(env, this->objectToReflect);
                         CLAID_THROW(claid::Exception, "Error, cannot reflect member \"" << memberFieldName << "\" of Java class \"" << className << "\".\n"
-                        << "A wrapper for class \"" << memberClassName << "\" was not found. Only classes registered to the CLAID reflection system are supported for reflection.\n"
+                        << "A wrapper for class \"" << memberClassName << "\" was not found. Only primitive types or classes registered to the CLAID reflection system are supported for reflection.\n"
                         << "This means that on the java side, only Java classes are supported that have been generated from a native C++ type using jbind11.");
                     }
-                    printf("Handle primitive %d\n", 3);
                     javaWrapper->forwardReflectorToNativeObject(memberFieldName.c_str(), *this->reflector, member);
                 }
 

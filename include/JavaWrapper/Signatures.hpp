@@ -33,6 +33,14 @@ namespace claid
                     return result;
                 }
 
+                static std::string classNameToEncapsulatedSignature(const std::string& javaClassName)
+                {
+                    std::string result = "L" + javaClassName + ";";
+                    StringUtils::stringReplaceAll(result, ".", "/");
+                    return result;
+                }
+
+
                 static std::string signatureToClassName(const std::string& javaClassName)
                 {
                     std::string result = javaClassName;

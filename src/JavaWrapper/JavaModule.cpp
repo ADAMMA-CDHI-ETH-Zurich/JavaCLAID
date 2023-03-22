@@ -184,3 +184,5 @@ namespace claid
 
     }
 }
+
+REGISTER_MODULE(claid::JavaWrapper::JavaModule)

@@ -15,6 +15,7 @@ namespace claid
         {
             protected:
                 std::shared_ptr<JbindWrapperGeneratorBase> wrapperGenerator;
+                virtual void forwardReflector(const char* memberFieldName, const std::string& reflectorName, void* reflectorPtr, jobject javaObject) = 0;
 
             public:
                 virtual void generateWrapper(java::JavaPackage& package) = 0;
@@ -41,6 +42,15 @@ namespace claid
 
                 virtual const std::string& getFullyQualifiedCppClassName() const = 0;
                 virtual const std::string& getCanonicalJavaClassName() const = 0;
+
+
+                template<typename Reflector>
+                void forwardReflectorToNativeObject(const char* memberFieldName, Reflector& reflector, jobject javaObject)
+                {
+                    std::string reflectorName = reflector.getReflectorName();
+                    void* untypedReflector = static_cast<void*>(&reflector);
+                    this->forwardReflector(memberFieldName, reflectorName, untypedReflector, javaObject);
+                }
                 
                 
         };

@@ -13,25 +13,12 @@ namespace claid
 
         void JavaModule::initialize()
         {
-            Logger::printfln("JavaModule init");
-            std::cout  << std::flush;
-            
-            Logger::printfln("JavaModule init 2");
-            std::cout << std::flush;
             JNIEnv* env = java::JNIUtils::getEnv();
-                        Logger::printfln("JavaModule init 2.5");
-
             jobject self = java::cast(this);
-            Logger::printfln("JavaModule init 3");
-            std::cout << std::flush;
-
-
             jclass cls = java::JNIUtils::getClassOfObject(env, self);
-            Logger::printfln("JavaModule init 4");
 
             jmethodID mid =
                     env->GetMethodID(cls, "initialize", "()V");
-            Logger::printfln("JavaModule init  5");
 
             if(mid == nullptr)
             {

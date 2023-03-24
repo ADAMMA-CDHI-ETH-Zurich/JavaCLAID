@@ -17,10 +17,7 @@ namespace claid
                 jobject objectToReflect;
                 Reflector* reflector;
 
-
-                // Actually the member is not really needed, since we use the string to look up the field ID.
-                // But its helpful to ensure that the user really specifies a variable on the java side.
-                virtual void reflectFromJava(std::string memberFieldName, jobject member)
+                void reflectFromJavaWithDefaultValue(std::string memberFieldName, jobject member, jobject defaultValue)
                 {
                     std::cout << "TypedReflect reflectFromJava called\n";
                     JNIEnv* env = java::JNIUtils::getEnv();
@@ -39,12 +36,19 @@ namespace claid
 
                     if(isPrimitive(memberClassName))
                     {
-                        handlePrimitive(memberFieldName, member);
+                        handlePrimitive(memberFieldName, member, defaultValue);
                     }
                     else
                     {
-                        handleWithWrapper(memberFieldName, member);
+                        handleWithWrapper(memberFieldName, member, defaultValue);
                     }
+                }
+
+                // Actually the member is not really needed, since we use the string to look up the field ID.
+                // But its helpful to ensure that the user really specifies a variable on the java side.
+                virtual void reflectFromJava(std::string memberFieldName, jobject member)
+                {
+                    reflectFromJavaWithDefaultValue(memberFieldName, member, nullptr);
                 };
 
                 template<typename T>
@@ -129,66 +133,83 @@ namespace claid
                 }
                 
                 template<typename T>
-                void reflectPrimitive(std::string memberFieldName, jobject member)
+                void reflectPrimitive(std::string memberFieldName, jobject member, jobject defaultValueObject)
                 {
                     Getter<T> getter(&TypedJavaReflector::javaPrimitiveGetter<T>, this, memberFieldName, member);
                     Setter<T> setter(&TypedJavaReflector::javaPrimitiveSetter<T>, this, memberFieldName, member);
-                    reflector->member(memberFieldName.c_str(), getter, setter);
+
+                    if(defaultValueObject == nullptr)
+                    {
+                        reflector->member(memberFieldName.c_str(), getter, setter);
+                    }
+                    else
+                    {
+                        T defaultValue = java::fromJavaObject<T>(defaultValueObject);
+                        reflector->member(memberFieldName.c_str(), getter, setter, defaultValue);
+                    }
                 }
 
-                void reflectString(std::string memberFieldName, jobject member)
+                void reflectString(std::string memberFieldName, jobject member, jobject defaultValue)
                 {
                     typedef std::string T;
                     Getter<T> getter(&TypedJavaReflector::javaObjectGetter<T>, this, memberFieldName, member);
                     Setter<T> setter(&TypedJavaReflector::javaObjectSetter<T>, this, memberFieldName, member);
-                    reflector->member(memberFieldName.c_str(), getter, setter);
+                    
+                    if(defaultValue == nullptr)
+                    {
+                        reflector->member(memberFieldName.c_str(), getter, setter);
+                    }
+                    else
+                    {
+                        reflector->member(memberFieldName.c_str(), getter, setter, java::fromJavaObject<T>(defaultValue));
+                    }
                 }
 
-                void handlePrimitive(std::string memberFieldName, jobject member)
+                void handlePrimitive(std::string memberFieldName, jobject member, jobject defaultValue)
                 {
                     JNIEnv* env = java::JNIUtils::getEnv();
                     std::string className = java::JNIUtils::getNameOfClassOfObject(env, member);
 
                     if(className == "java.lang.Byte")
                     {
-                        reflectPrimitive<int8_t>(memberFieldName, member);
+                        reflectPrimitive<int8_t>(memberFieldName, member, defaultValue);
                     }
                     else if(className == "java.lang.Short")
                     {
-                        reflectPrimitive<int16_t>(memberFieldName, member);
+                        reflectPrimitive<int16_t>(memberFieldName, member, defaultValue);
                     }
                     else if(className == "java.lang.Integer")
                     {
-                        reflectPrimitive<int32_t>(memberFieldName, member);
+                        reflectPrimitive<int32_t>(memberFieldName, member, defaultValue);
                     }
                     else if(className == "java.lang.Long")
                     {
-                        reflectPrimitive<int64_t>(memberFieldName, member);
+                        reflectPrimitive<int64_t>(memberFieldName, member, defaultValue);
                     }
                     else if(className == "java.lang.Float")
                     {
-                        reflectPrimitive<float>(memberFieldName, member);
+                        reflectPrimitive<float>(memberFieldName, member, defaultValue);
                     }
                     else if(className == "java.lang.Double")
                     {
-                        reflectPrimitive<double>(memberFieldName, member);
+                        reflectPrimitive<double>(memberFieldName, member, defaultValue);
                     }
                     else if(className == "java.lang.Character")
                     {
-                        reflectPrimitive<char16_t>(memberFieldName, member);
+                        reflectPrimitive<char16_t>(memberFieldName, member, defaultValue);
                     }
                     else if(className == "java.lang.Boolean")
                     {
-                        reflectPrimitive<bool>(memberFieldName, member);
+                        reflectPrimitive<bool>(memberFieldName, member, defaultValue);
                     }
                     else if(className == "java.lang.String")
                     {
                         // Treat string as primitive.
-                        reflectString(memberFieldName, member);
+                        reflectString(memberFieldName, member, defaultValue);
                     }
                 }
 
-                void handleWithWrapper(const std::string& memberFieldName, jobject member)
+                void handleWithWrapper(const std::string& memberFieldName, jobject member, jobject defaultValue)
                 {
                     JNIEnv* env = java::JNIUtils::getEnv();
                     std::string memberClassName = java::JNIUtils::getNameOfClassOfObject(env, member);
@@ -202,7 +223,7 @@ namespace claid
                         << "A wrapper for class \"" << memberClassName << "\" was not found. Only primitive types or classes registered to the CLAID reflection system are supported for reflection.\n"
                         << "This means that on the java side, only Java classes are supported that have been generated from a native C++ type using jbind11.");
                     }
-                    javaWrapper->forwardReflectorToNativeObject(memberFieldName.c_str(), *this->reflector, member);
+                    javaWrapper->forwardReflectorToNativeObject(memberFieldName.c_str(), *this->reflector, member, defaultValue);
                 }
 
             public:

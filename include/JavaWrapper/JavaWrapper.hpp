@@ -166,7 +166,7 @@ namespace claid
                     onDataHelper(module, callbackFunctionName, channelData);
                 }
 
-                void forwardReflector(const char* memberFieldName, const std::string& reflectorName, void* reflectorPtr, jobject javaObject)
+                void forwardReflector(const char* memberFieldName, const std::string& reflectorName, void* reflectorPtr, jobject javaObject, jobject defaultValue)
                 {
                     Class* dataPtr = java::fromJavaObject<Class*>(javaObject);
                     std::string className = ClassFactory::getInstance()->getClassNameOfObject(*dataPtr);
@@ -178,8 +178,15 @@ namespace claid
                         << "The underlying Cpp class \"" << className << "\" was not registered to the CLAID serialization system. Please register this class using REGISTER_SERIALIZATION(...).");
                     }
 
-
-                    untypedReflector->invokeMember(memberFieldName, static_cast<void*>(reflectorPtr), static_cast<void*>(dataPtr));
+                    if(defaultValue == nullptr)
+                    {
+                        untypedReflector->invokeMember(memberFieldName, static_cast<void*>(reflectorPtr), static_cast<void*>(dataPtr));
+                    }
+                    else
+                    {
+                        Class* defaultValuePtr = java::fromJavaObject<Class*>(defaultValue);
+                        untypedReflector->invokeMemberWithDefaultValue(memberFieldName, static_cast<void*>(reflectorPtr), static_cast<void*>(dataPtr), static_cast<void*>(defaultValuePtr));
+                    }
                 }
 
                 const std::string& getFullyQualifiedCppClassName() const

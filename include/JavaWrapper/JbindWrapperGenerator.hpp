@@ -92,7 +92,7 @@ namespace claid
                 {
                     this->className = className;
                     staticMemberRegisted = false;
-                    // Sadly, need to create an instance of the class here, cuz we have no means of statically calling the functions, yet.
+                    // Sadly, need to create an instance of the class here, because we have no means of statically calling the functions, yet.
                     Class p;
                     
                     this->javaPackage = &package;

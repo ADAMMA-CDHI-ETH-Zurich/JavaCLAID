@@ -35,27 +35,33 @@ namespace claid
                     jmethodID mid =
                         env->GetMethodID(cls, "reflect", "(LJavaCLAID/Reflector;)V");
 
-                    if(mid == nullptr)
+                    if(mid != nullptr)
                     {
-                        CLAID_THROW(Exception, "Cannot reflect JavaModule \"" << this->getModuleName() << "\". This Module has no reflect function with the following signature: \n"
-                        << "public void reflect(Reflector reflector)");
+                        //   CLAID_THROW(Exception, "Cannot reflect JavaModule \"" << this->getModuleName() << "\". This Module has no reflect function with the following signature: \n"
+                        //   << "public void reflect(Reflector reflector)");
+                        jobject javaReflectorObject = java::JNIUtils::createObjectFromClassName(env, "JavaCLAID.Reflector", "");
+                        
+
+                        // When we create an instance of a class that was created using jbind11 from C++,
+                        // the jobject that is passed to JBindWrapper_init(...) is only temporary and not valid after init anymore.
+                        // The valid reference is the one we got from createObjectFromClassName.
+                        // Hence, we need to override the stored reference in the handle.
+                        java::JavaHandle handle = java::JavaHandle::getHandleFromObject(java::JNIUtils::getEnv(), javaReflectorObject);
+                        handle.getData()->setJavaObjectReference(javaReflectorObject);
+                        handle.getData()->overrideNativeData(std::static_pointer_cast<void>(reflector));
+
+                        GenericJavaReflector* genericReflector = java::fromJavaObject<GenericJavaReflector*>(javaReflectorObject);
+                    
+                        env->CallVoidMethod(self, mid, javaReflectorObject);
+                        env->DeleteLocalRef(javaReflectorObject);
                     }
+                    else
+                    {
+                        env->ExceptionClear();
+                    }
+                    env->DeleteLocalRef(cls);
 
-                    jobject javaReflectorObject = java::JNIUtils::createObjectFromClassName(env, "JavaCLAID.Reflector", "");
-					
 
-					// When we create an instance of a class that was created using jbind11 from C++,
-					// the jobject that is passed to JBindWrapper_init(...) is only temporary and not valid after init anymore.
-					// The valid reference is the one we got from createObjectFromClassName.
-					// Hence, we need to override the stored reference in the handle.
-					java::JavaHandle handle = java::JavaHandle::getHandleFromObject(java::JNIUtils::getEnv(), javaReflectorObject);
-					handle.getData()->setJavaObjectReference(javaReflectorObject);
-                    handle.getData()->overrideNativeData(std::static_pointer_cast<void>(reflector));
-
-                    GenericJavaReflector* genericReflector = java::fromJavaObject<GenericJavaReflector*>(javaReflectorObject);
-                 
-                    env->CallVoidMethod(self, mid, javaReflectorObject);
-                    env->DeleteLocalRef(javaReflectorObject);
                     // std::cout << std::flush;
 
                     // JavaWrapperBase* wrapper = getWrapperByName(fieldClassName);

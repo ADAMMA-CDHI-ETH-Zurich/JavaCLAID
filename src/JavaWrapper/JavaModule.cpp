@@ -70,7 +70,7 @@ namespace claid
             return javaWrapper->publish(this, channelID);
         }
 
-        ChannelWrapper JavaModule::subscribe(jclass dataType, std::string channelID, std::string functionCallbackName)
+        ChannelWrapper JavaModule::subscribe(jclass dataType, std::string channelID, java::Consumer consumer)
         {
             std::string canonicalClassName = java::JNIUtils::getClassName(java::JNIUtils::getEnv(), dataType);
           
@@ -82,7 +82,7 @@ namespace claid
             }
 
             JavaWrapperBase* javaWrapper = JavaWrapperMaster::getInstance()->getWrapperForJavaClass(canonicalClassName);
-            return javaWrapper->subscribe(this, channelID, functionCallbackName);
+            return javaWrapper->subscribe(this, channelID, consumer);
         }
 
         void JavaModule::callCallbackFunction(const std::string& functionName, jobject dataObject)

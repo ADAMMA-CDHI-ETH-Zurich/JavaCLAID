@@ -4,6 +4,7 @@
 #include "jbind11/JNIUtils/JNIUtils.hpp"
 #include "ChannelWrapper.hpp"
 #include "TypedJavaReflector.hpp"
+#include "JavaNativeClasses/Consumer.hpp"
 namespace java = jbind11;
 
 namespace claid
@@ -94,7 +95,7 @@ namespace claid
                     java::JavaClass<JavaModule> cls(p, "Module");
 
                     cls.def("publish", &JavaModule::publish, java::GenericFunction(), java::GenericTypeReturn());
-                    cls.def("subscribe", &JavaModule::subscribe, java::GenericFunction(), java::GenericTypeReturn());
+                    cls.def("subscribe", &JavaModule::subscribe, java::GenericFunction(), java::GenericTypeReturn(), java::GenericParams({2},{"java.util.function.Consumer<ChannelData<T>>"}));
                     cls.def("registerPeriodicFunction", &JavaModule::registerPeriodicFunction);
                     cls.def("getUniqueIdentifier", &JavaModule::getUniqueIdentifier);
                 }
@@ -103,7 +104,7 @@ namespace claid
                 void postInitialize();
               
                 ChannelWrapper publish(jclass dataType, std::string channelID);
-                ChannelWrapper subscribe(jclass dataType, std::string channelID, std::string functionCallbackName);
+                ChannelWrapper subscribe(jclass dataType, std::string channelID, java::Consumer consumer);
                 
                 void registerPeriodicFunction(std::string identifier, std::string functionName, int32_t periodInMilliseconds);
                 void unregisterPeriodicFunction(jstring identifier);

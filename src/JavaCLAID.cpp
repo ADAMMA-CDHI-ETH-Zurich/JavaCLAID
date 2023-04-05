@@ -11,6 +11,8 @@ namespace java = jbind11;
 #include "JavaWrapper/ChannelDataWrapper.hpp"
 #include "JavaWrapper/ChannelWrapper.hpp"
 #include "JavaWrapper/GenericJavaReflector.hpp"
+#include "JavaWrapper/JavaModule.hpp"
+#include "JavaExtras/StaticBlock.hpp"
 using namespace claid;
 using namespace claid::JavaWrapper;
 
@@ -63,6 +65,23 @@ class JavaCLAID
             CLAID_RUNTIME->disableLoggingToFile();
         }
 
+        static void addModule(claid::JavaWrapper::JavaModule* module)
+        {
+            // The jobject reference currently stored in the handle of the java module is only
+            // valid as long as we are in this function.
+            // Since it is a Module, we need to make sure it will not get destroyed later.
+            // Hence, we create a new global ref and override the pointer stored in the handle.
+
+            JNIEnv* env = java::JNIUtils::getEnv();
+            jobject javaModuleObject = java::cast(module);
+            javaModuleObject = env->NewGlobalRef(javaModuleObject);
+            
+            java::JavaHandle handle = java::JavaHandle::getHandleFromObject(env, javaModuleObject);
+            handle.getData()->setJavaObjectReference(javaModuleObject);
+            
+            CLAID_RUNTIME->addModule(static_cast<claid::Module*>(module));
+        }
+
         #if defined __JBIND11_CROSSPLATFORM_ANDROID__ || defined(__ANDROID__)
             static void setContext(jobject context)
             {  
@@ -106,7 +125,7 @@ class JavaCLAID
 
 JBIND11_PACKAGE(JavaCLAID, p)  
 {
-    java::JavaClass<JavaCLAID> cls(p, "CLAID");
+    java::JavaClass<JavaCLAID> cls(p, "CLAID", java::StaticBlock("System.loadLibrary(\"JavaCLAID\");"));
     cls.def_static("loadFromXML", &JavaCLAID::loadFromXML);
     cls.def_static("loadFromXMLString", &JavaCLAID::loadFromXMLString);
     cls.def_static("start", &JavaCLAID::start);
@@ -115,7 +134,8 @@ JBIND11_PACKAGE(JavaCLAID, p)
     cls.def_static("connectTo", &JavaCLAID::connectTo);
     cls.def_static("enableLoggingToFile", &JavaCLAID::enableLoggingToFile);
     cls.def_static("disableLoggingToFile", &JavaCLAID::disableLoggingToFile);
-;
+    cls.def_static("addModule", &JavaCLAID::addModule);
+
 
     #if defined __JBIND11_CROSSPLATFORM_ANDROID__ || defined(__ANDROID__)
     cls.def_static("setContext", &JavaCLAID::setContext);

@@ -24,7 +24,7 @@ namespace claid
                     java::JavaClass<GenericJavaReflector> javaClass(package, "Reflector");
 
                     javaClass.def("reflect", &GenericJavaReflector::reflectFromJava, java::GenericFunction(), java::GenericParams({1}));
-                    javaClass.def("reflectWithDefaultValue", &GenericJavaReflector::reflectFromJava, java::GenericFunction(), java::GenericParams({1, 2}));
+                    javaClass.def("reflectWithDefaultValue", &GenericJavaReflector::reflectFromJavaWithDefaultValue, java::GenericFunction(), java::GenericParams({1, 2}));
 
                 //  pyClass.def("publish", &PythonModule::publish);
                 }
@@ -35,10 +35,10 @@ namespace claid
                     std::cout << "GenericReflect reflectFromJava called\n";
                 };
 
-                // virtual void reflectFromJavaWithDefaultValue(std::string memberFieldName, jobject member, jobject defaultValue)
-                // {
-                //     std::cout << "GenericReflect reflectFromJava called\n";
-                // };
+                virtual void reflectFromJavaWithDefaultValue(std::string memberFieldName, jobject member, jobject defaultValue)
+                {
+                    std::cout << "GenericReflect reflectFromJava called\n";
+                };
         };
     };
 }

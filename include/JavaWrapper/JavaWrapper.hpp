@@ -4,6 +4,7 @@ namespace java = jbind11;
 
 #include "JavaWrapper/JavaModule.hpp"
 #include "JavaWrapper/ChannelWrapper.hpp"
+#include "JavaWrapper/ChannelDataWrapper.hpp"
 
 #include "Logger/Logger.hpp"
 #include "RunTime/RunTime.hpp"
@@ -44,13 +45,13 @@ namespace claid
                 // of our functions, we get "accessing member of incomplete type", or sth like this... Using the templated helper functions solves this,
                 // as it forces the compiler to fully resolve the types and later implement the templated functions.. It's a fun game we're playing!
                 template<typename JavaModule>
-                ChannelWrapper subscribeHelper(JavaModule* module, std::string channelID, std::string callbackFunctionName) 
+                ChannelWrapper subscribeHelper(JavaModule* module, std::string channelID, java::Consumer consumer) 
                 {
                     std::shared_ptr<Channel<Class>> channel(new Channel<Class>);
                
 
                     std::function<void (ChannelData<Class>)> callbackFunction = 
-                        std::bind(&JavaWrapper::onData, this, module, callbackFunctionName, std::placeholders::_1);
+                        std::bind(&JavaWrapper::onData, this, module, consumer, std::placeholders::_1);
 
                     std::string channelIDWithNamespace = module->addNamespacesToChannelID(channelID);
                     *channel = 
@@ -79,7 +80,7 @@ namespace claid
                 }
 
                 template<typename JavaModule>
-                void onDataHelper(JavaModule* module, std::string callbackFunctionName, ChannelData<Class> channelData)
+                void onDataHelper(JavaModule* module, java::Consumer consumer, ChannelData<Class> channelData)
                 {
                     Class* dataCopy = new Class(channelData->value());        
 
@@ -87,9 +88,17 @@ namespace claid
                     // Otherwise, this currently requires 2 copy operations
                     // (from channelData to dataCopy and then to javaData).           
                     jobject javaData = java::cast(*dataCopy); 
-                    module->callCallbackFunction(callbackFunctionName, javaData);
-                    java::JNIUtils::getEnv()->DeleteLocalRef(javaData);
-                    
+
+                    ChannelDataWrapper channelDataWrapper(javaData);
+                
+                    jobject javaChannelData = java::cast(channelDataWrapper);
+
+                    consumer.accept(javaChannelData);
+                    // module->callCallbackFunction(callbackFunctionName, javaData);
+                    JNIEnv* env = java::JNIUtils::getEnv();
+                    env->DeleteLocalRef(javaData);
+                    env->DeleteLocalRef(javaChannelData);
+
                     delete dataCopy;
                 }
 
@@ -132,9 +141,9 @@ namespace claid
                     this->wrapperGenerator->generate(package, className);
                 }
 
-                ChannelWrapper subscribe(JavaModule* module, std::string channelID, std::string callbackFunctionName) 
+                ChannelWrapper subscribe(JavaModule* module, std::string channelID, java::Consumer consumer) 
                 {
-                    return subscribeHelper(module, channelID, callbackFunctionName);
+                    return subscribeHelper(module, channelID, consumer);
                 }
 
                 virtual ChannelWrapper publish(JavaModule* module, std::string channelID)
@@ -161,9 +170,9 @@ namespace claid
                     channel->post(*obj, Time::fromUnixTimestampMilliseconds(timestamp));
                 }
 
-                void onData(JavaModule* module, std::string callbackFunctionName, ChannelData<Class> channelData)
+                void onData(JavaModule* module, java::Consumer consumer, ChannelData<Class> channelData)
                 {
-                    onDataHelper(module, callbackFunctionName, channelData);
+                    onDataHelper(module, consumer, channelData);
                 }
 
                 void forwardReflector(const char* memberFieldName, const std::string& reflectorName, void* reflectorPtr, jobject javaObject, jobject defaultValue)

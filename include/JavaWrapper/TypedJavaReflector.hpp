@@ -136,7 +136,11 @@ namespace claid
                 void reflectPrimitive(std::string memberFieldName, jobject member, jobject defaultValueObject)
                 {
                     Getter<T> getter(&TypedJavaReflector::javaPrimitiveGetter<T>, this, memberFieldName, member);
-                    Setter<T> setter(&TypedJavaReflector::javaPrimitiveSetter<T>, this, memberFieldName, member);
+                    
+                    std::function<void (const T&)> func = std::bind(&TypedJavaReflector::javaPrimitiveSetter<T>, this, memberFieldName, member, std::placeholders::_1);
+                    Setter<T> setter(func);
+                    // Sadly, MSVC is unable to compile this, even though clang and gcc can:
+                    // Setter<T> setter(&TypedJavaReflector::javaPrimitiveSetter<T>, this, memberFieldName, member);
 
                     if(defaultValueObject == nullptr)
                     {
@@ -155,15 +159,20 @@ namespace claid
                 {
                     typedef std::string T;
                     Getter<T> getter(&TypedJavaReflector::javaObjectGetter<T>, this, memberFieldName, member);
-                    Setter<T> setter(&TypedJavaReflector::javaObjectSetter<T>, this, memberFieldName, member);
+
+                    std::function<void (const T&)> func = std::bind(&TypedJavaReflector::javaObjectSetter<T>, this, memberFieldName, member, std::placeholders::_1);
+                    Setter<T> setter(func);
+
+                    // Sadly, MSVC is unable to compile this, even though clang and gcc can:
+                    // Setter<T> setter(&TypedJavaReflector::javaObjectSetter<T>, this, memberFieldName, member);
                     
                     if(defaultValue == nullptr)
                     {
-                        reflector->member(memberFieldName.c_str(), getter, setter);
+                        reflector->member<T>(memberFieldName.c_str(), getter, setter);
                     }
                     else
                     {
-                        reflector->member(memberFieldName.c_str(), getter, setter, java::fromJavaObject<T>(defaultValue));
+                        reflector->member<T>(memberFieldName.c_str(), getter, setter, java::fromJavaObject<T>(defaultValue));
                     }
                 }
 

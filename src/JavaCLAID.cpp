@@ -5,6 +5,10 @@
 #include "jbind11/jbind11.hpp"
 namespace java = jbind11;
 
+#include "JavaWrapper/Android/Caster/ContextCaster.hpp"
+#include "JavaWrapper/Android/Context.hpp"
+#include "JavaWrapper/Android/AssetUtils.hpp"
+
 #include "CLAID.hpp"
 #include "XML/XMLDocument.hpp"
 
@@ -12,15 +16,17 @@ namespace java = jbind11;
 #include "JavaWrapper/ChannelWrapper.hpp"
 #include "JavaWrapper/GenericJavaReflector.hpp"
 #include "JavaWrapper/JavaModule.hpp"
+
 #include "JavaExtras/StaticBlock.hpp"
+
+
 using namespace claid;
 using namespace claid::JavaWrapper;
 
 class JavaCLAID
 {
     public:
-        static jobject context;
-        static jobject activity;
+        static Context context;
 
         static void loadFromXML(std::string path)
         {
@@ -83,15 +89,15 @@ class JavaCLAID
         }
 
         #if defined __JBIND11_CROSSPLATFORM_ANDROID__ || defined(__ANDROID__)
-            static void setContext(jobject context)
+            static void setContext(Context context)
             {  
                 JNIEnv* env = java::JNIUtils::getEnv();
-                JavaCLAID::context = env->NewGlobalRef(context);
+                JavaCLAID::context = Context(env->NewGlobalRef(context.getJavaObject()));
             }
 
-            static jobject getContext()
+            static Context getContext()
             {
-                if(JavaCLAID::context == nullptr)
+                if(JavaCLAID::context.getJavaObject() == nullptr)
                 {
                     CLAID_THROW(Exception, "Error in JavaCLAID: Cannot return context in getContext().\n"
                     "Context is not available, since no context has been set.\n"
@@ -100,26 +106,33 @@ class JavaCLAID
                 }   
            
                 return JavaCLAID::context;
-            }         
+            }    
 
-            static void setActivity(jobject activity)
-            {  
-                JNIEnv* env = java::JNIUtils::getEnv();
-                JavaCLAID::activity = env->NewGlobalRef(activity);
-            }
-
-            static jobject getActivity()
+            static bool isContextSet()
             {
-                if(JavaCLAID::activity == nullptr)
+                return JavaCLAID::context.isValid();
+            }     
+
+            static void loadFromAssets(std::string fileName)
+            {
+                if(!JavaCLAID::context.isValid())
                 {
-                    CLAID_THROW(Exception, "Error in JavaCLAID: Cannot return activity in getActivity().\n"
-                    "Activity is not available, since no activity has been set.\n"
-                    "Please use CLAID.setActivity(...) and provide an activity.\n"
-                    "E.g., if you are starting CLAID from within MainActivity, simply do CLAID.context(this)) BEFORE CLAID.start()");
-                }   
-           
-                return JavaCLAID::context;
-            }   
+                    CLAID_THROW(Exception, "Error in JavaCLAID.loadFromAssets(...). Cannot load file \"" << fileName << "\" from assets as no valid context was set.\n"
+                    << "Did you use CLAID.setContext() and specified the application context ? (Do not pass an activity, at this might be only temporarily.)");
+                }
+
+                std::string fileContent;
+                if(!AssetUtils::loadAssetsFileToString(JavaCLAID::context, fileName, fileContent))
+                {
+                    CLAID_THROW(Exception, "Error in JavaCLAID.loadFromAssets(...). Cannot load file \"" << fileName << "\" from assets.\n"
+                        << "The file does not exist or cannot be read.");
+                }
+
+                claid::Logger::printfln("Loaded: %s\n", fileContent.c_str());
+
+                JavaCLAID::loadFromXMLString(fileContent);      
+
+            }
         #endif
 };
 
@@ -140,8 +153,8 @@ JBIND11_PACKAGE(JavaCLAID, p)
     #if defined __JBIND11_CROSSPLATFORM_ANDROID__ || defined(__ANDROID__)
     cls.def_static("setContext", &JavaCLAID::setContext);
     cls.def_static("getContext", &JavaCLAID::getContext);
-    cls.def_static("setActivity", &JavaCLAID::setActivity);
-    cls.def_static("getActivity", &JavaCLAID::getActivity);
+    cls.def_static("isContextSet", &JavaCLAID::isContextSet);
+    cls.def_static("loadFromAssets", &JavaCLAID::loadFromAssets);
     #endif
 
     JavaModule::addToJbindPackage(p);
@@ -150,5 +163,4 @@ JBIND11_PACKAGE(JavaCLAID, p)
     GenericJavaReflector::addToJbindPackage(p);
 }
 
-jobject JavaCLAID::context = nullptr;
-jobject JavaCLAID::activity = nullptr;
+Context JavaCLAID::context = nullptr;

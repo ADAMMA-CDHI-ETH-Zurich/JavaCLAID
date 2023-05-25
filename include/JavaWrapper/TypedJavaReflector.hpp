@@ -168,11 +168,11 @@ namespace claid
                     
                     if(defaultValue == nullptr)
                     {
-                        reflector->member<T>(memberFieldName.c_str(), getter, setter);
+                        reflector->template member<T>(memberFieldName.c_str(), getter, setter);
                     }
                     else
                     {
-                        reflector->member<T>(memberFieldName.c_str(), getter, setter, java::fromJavaObject<T>(defaultValue));
+                        reflector->template member<T>(memberFieldName.c_str(), getter, setter, java::fromJavaObject<T>(defaultValue));
                     }
                 }
 

@@ -5,6 +5,7 @@
 #include "ChannelWrapper.hpp"
 #include "TypedJavaReflector.hpp"
 #include "JavaNativeClasses/Consumer.hpp"
+#include "JavaNativeClasses/Runnable.hpp"
 namespace java = jbind11;
 
 namespace claid
@@ -98,6 +99,12 @@ namespace claid
                     cls.def("subscribe", &JavaModule::subscribe, java::GenericFunction(), java::GenericTypeReturn(), java::GenericParams({2},{"java.util.function.Consumer<ChannelData<T>>"}));
                     cls.def("registerPeriodicFunction", &JavaModule::registerPeriodicFunction);
                     cls.def("getUniqueIdentifier", &JavaModule::getUniqueIdentifier);
+                    cls.def("scheduleFunctionAtTime", &JavaModule::scheduleFunctionAtTime);
+                    cls.def("scheduleFunctionInXDays", &JavaModule::scheduleFunctionInXDays);
+                    cls.def("scheduleFunctionInXHours", &JavaModule::scheduleFunctionInXHours);
+                    cls.def("scheduleFunctionInXMinutes", &JavaModule::scheduleFunctionInXMinutes);
+                    cls.def("scheduleFunctionInXSeconds", &JavaModule::scheduleFunctionInXSeconds);
+                    cls.def("scheduleFunctionInXMilliSeconds", &JavaModule::scheduleFunctionInXMilliSeconds);
                 }
 
                 void initialize();
@@ -106,8 +113,18 @@ namespace claid
                 ChannelWrapper publish(jclass dataType, std::string channelID);
                 ChannelWrapper subscribe(jclass dataType, std::string channelID, java::Consumer consumer);
                 
-                void registerPeriodicFunction(std::string identifier, std::string functionName, int32_t periodInMilliseconds);
-                void unregisterPeriodicFunction(jstring identifier);
+                void registerPeriodicFunction(std::string identifier, java::Runnable, int32_t periodInMilliseconds);
+                void unregisterPeriodicFunction(std::string identifier);
+
+
+                void scheduleFunctionAtTime(std::string name, java::Runnable runnable, int32_t hour, int32_t minute, int32_t second, int32_t millisecond);
+                void scheduleFunctionInXDays(std::string name, java::Runnable runnable, int32_t days);
+                void scheduleFunctionInXHours(std::string name, java::Runnable runnable, int32_t hours);
+                void scheduleFunctionInXMinutes(std::string name, java::Runnable runnable, int32_t minutes);
+                void scheduleFunctionInXSeconds(std::string name, java::Runnable runnable, int32_t seconds);
+                void scheduleFunctionInXMilliSeconds(std::string name, java::Runnable runnable, int32_t seconds);
+            
+
 
                 template<typename T>
                 ChannelSubscriber<T> makeSubscriber(std::function<void (ChannelData<T>)> function)
@@ -127,7 +144,7 @@ namespace claid
             private:
 
 
-                void invokeJavaPeriodicFunction(std::string functionName);
+                void invokeJavaFunction(java::Runnable runnable);
 
         };
     }

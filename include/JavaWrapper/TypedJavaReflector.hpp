@@ -144,12 +144,10 @@ namespace claid
 
                     if(defaultValueObject == nullptr)
                     {
-                        Logger::printfln("Invoking member primitive");
                         reflector->member(memberFieldName.c_str(), getter, setter);
                     }
                     else
                     {
-                        Logger::printfln("Invoking member primitive with default value");
                         T defaultValue = java::fromJavaObject<T>(defaultValueObject);
                         reflector->member(memberFieldName.c_str(), getter, setter, defaultValue);
                     }
@@ -165,7 +163,6 @@ namespace claid
 
                     // Sadly, MSVC is unable to compile this, even though clang and gcc can:
                     // Setter<T> setter(&TypedJavaReflector::javaObjectSetter<T>, this, memberFieldName, member);
-                    
                     if(defaultValue == nullptr)
                     {
                         reflector->template member<T>(memberFieldName.c_str(), getter, setter);

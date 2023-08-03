@@ -117,42 +117,56 @@ namespace claid
             env->DeleteLocalRef(cls);
         }
     
-        void JavaModule::registerPeriodicFunction(std::string identifier, std::string functionName, int32_t periodInMilliseconds)
+        void JavaModule::registerPeriodicFunction(std::string identifier, java::Runnable runnable, int32_t periodInMilliseconds)
         {
-            JNIEnv* env = java::JNIUtils::getEnv();
-            
-
-            std::function<void()> function = std::bind(&JavaModule::invokeJavaPeriodicFunction, this, functionName);
+            std::function<void()> function = std::bind(&JavaModule::invokeJavaFunction, this, runnable);
             Module::registerPeriodicFunction(identifier, function, static_cast<size_t>(periodInMilliseconds));
         }
 
-        void JavaModule::unregisterPeriodicFunction(jstring identifier)
+        void JavaModule::scheduleFunctionAtTime(std::string name, java::Runnable runnable, int32_t hour, int32_t minute, int32_t second, int32_t millisecond)
         {
-            JNIEnv* env = java::JNIUtils::getEnv();
-            std::string stdIdentifier = java::JNIUtils::toStdString(env, identifier);
-            Module::unregisterPeriodicFunction(stdIdentifier);
+            std::function<void()> function = std::bind(&JavaModule::invokeJavaFunction, this, runnable);
+            Module::scheduleFunctionAtTime(name, function, hour, minute, second, millisecond);
         }
 
-        void JavaModule::invokeJavaPeriodicFunction(std::string functionName)
+        void JavaModule::scheduleFunctionInXDays(std::string name, java::Runnable runnable, int32_t days)
         {
-            jobject self = java::cast(this);
+            std::function<void()> function = std::bind(&JavaModule::invokeJavaFunction, this, runnable);
+            Module::scheduleFunctionInXDays(name, function, days);
+        }
 
-            JNIEnv* env = java::JNIUtils::getEnv();
-            jclass cls = java::JNIUtils::getClassOfObject(env, self);
-            jmethodID mid =
-                    env->GetMethodID(cls, functionName.c_str(), Signatures::Function::functionSignatureVoid({/* No parameter, hence empty vector */}).c_str());
-            
-            if(mid == nullptr)
-            {
-                CLAID_THROW(Exception, "Error, registered periodic function could not be called. Function \"" << functionName << "\" with signature void () not found for class "
-                    << java::JNIUtils::getClassName(env, cls));
-            }
-            else
-            {
-                env->CallVoidMethod(self, mid);
-            }
-            env->DeleteLocalRef(cls);
+        void JavaModule::scheduleFunctionInXHours(std::string name, java::Runnable runnable, int32_t hours)
+        {
+            std::function<void()> function = std::bind(&JavaModule::invokeJavaFunction, this, runnable);
+            Module::scheduleFunctionInXHours(name, function, hours);
+        }
 
+        void JavaModule::scheduleFunctionInXMinutes(std::string name, java::Runnable runnable, int32_t minutes)
+        {
+            std::function<void()> function = std::bind(&JavaModule::invokeJavaFunction, this, runnable);
+            Module::scheduleFunctionInXMinutes(name, function, minutes);
+        }
+
+        void JavaModule::scheduleFunctionInXSeconds(std::string name, java::Runnable runnable, int32_t seconds)
+        {
+            std::function<void()> function = std::bind(&JavaModule::invokeJavaFunction, this, runnable);
+            Module::scheduleFunctionInXSeconds(name, function, seconds);
+        }
+
+        void JavaModule::scheduleFunctionInXMilliSeconds(std::string name, java::Runnable runnable, int32_t seconds)
+        {
+            std::function<void()> function = std::bind(&JavaModule::invokeJavaFunction, this, runnable);
+            Module::scheduleFunctionInXMilliSeconds(name, function, seconds);
+        }
+
+        void JavaModule::unregisterPeriodicFunction(std::string identifier)
+        {
+            Module::unregisterPeriodicFunction(identifier);
+        }
+
+        void JavaModule::invokeJavaFunction(java::Runnable runnable)
+        {
+            runnable.run();
         }
 
         JNIEnv* JavaModule::getEnv()

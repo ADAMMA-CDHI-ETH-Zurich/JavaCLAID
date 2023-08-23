@@ -18,6 +18,9 @@ namespace java = jbind11;
 #include "JavaWrapper/JavaModule.hpp"
 
 #include "JavaExtras/StaticBlock.hpp"
+#include "JavaNativeClasses/Consumer.hpp"
+
+#include "ExceptionHandler/ExceptionHandler.hpp"
 
 
 using namespace claid;
@@ -88,6 +91,23 @@ class JavaCLAID
             CLAID_RUNTIME->addModule(static_cast<claid::Module*>(module));
         }
 
+        static void registerExceptionHandler(java::Consumer consumer)
+        {
+            std::function<void (std::string, std::string, int)> javaTrampoline 
+                = std::bind(&JavaCLAID::invokeExceptionHandler, 
+                            consumer, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+            
+            claid::ExceptionHandler::registerExceptionHandler(javaTrampoline);
+        }
+
+        static void invokeExceptionHandler(java::Consumer consumer, std::string exception, std::string file, int line)
+        {
+            claid::Logger::printfln("INVOKING JAVA EXCEPTION HANDLER");
+            jstring jException = (jstring) java::cast<std::string>(exception);
+            consumer.accept(jException);
+            java::JNIUtils::getEnv()->DeleteLocalRef(jException);
+        }
+
         #if defined __JBIND11_CROSSPLATFORM_ANDROID__ || defined(__ANDROID__)
             static void setContext(Context context)
             {  
@@ -148,6 +168,7 @@ JBIND11_PACKAGE(JavaCLAID, p)
     cls.def_static("enableLoggingToFile", &JavaCLAID::enableLoggingToFile);
     cls.def_static("disableLoggingToFile", &JavaCLAID::disableLoggingToFile);
     cls.def_static("addModule", &JavaCLAID::addModule);
+    cls.def_static("registerExceptionHandler", &JavaCLAID::registerExceptionHandler, java::GenericParams({0},{"java.util.function.Consumer<String>"}));
 
 
     #if defined __JBIND11_CROSSPLATFORM_ANDROID__ || defined(__ANDROID__)

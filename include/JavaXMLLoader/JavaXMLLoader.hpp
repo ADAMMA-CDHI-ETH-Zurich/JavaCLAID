@@ -36,13 +36,10 @@ namespace claid
 						"</JavaModule>");
 					}   
 						
-					className = Signatures::Class::classNameToSignature(className);
 					Logger::printfln("Trying to load Module %s", className.c_str());
 					JavaModuleFactory factory(className);
-					printf("Module 0!\n");
 
 					JavaModule* javaModule = factory.getInstance();
-					printf("Module instantiated!\n");
 
 					if(javaModule == nullptr)
 					{
